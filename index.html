@@ -27,37 +27,69 @@
     <div class="bg-white border-b">
         <div class="max-w-7xl mx-auto px-4 py-4">
             <div class="flex flex-wrap gap-3">
+                <!-- 地區篩選（香港十八區） -->
                 <select id="regionFilter" class="px-3 py-2 border rounded-lg text-sm">
                     <option value="all">所有地區</option>
-                    <option value="hk-island">港島</option>
-                    <option value="kowloon">九龍</option>
-                    <option value="nt">新界</option>
+                    <optgroup label="港島">
+                        <option value="中西區">中西區</option>
+                        <option value="灣仔">灣仔</option>
+                        <option value="東區">東區</option>
+                        <option value="南區">南區</option>
+                    </optgroup>
+                    <optgroup label="九龍">
+                        <option value="油尖旺">油尖旺</option>
+                        <option value="深水埗">深水埗</option>
+                        <option value="九龍城">九龍城</option>
+                        <option value="黃大仙">黃大仙</option>
+                        <option value="觀塘">觀塘</option>
+                    </optgroup>
+                    <optgroup label="新界">
+                        <option value="荃灣">荃灣</option>
+                        <option value="屯門">屯門</option>
+                        <option value="元朗">元朗</option>
+                        <option value="北區">北區</option>
+                        <option value="大埔">大埔</option>
+                        <option value="沙田">沙田</option>
+                        <option value="西貢">西貢</option>
+                        <option value="離島">離島</option>
+                        <option value="葵青">葵青</option>
+                    </optgroup>
                 </select>
 
+                <!-- 類別篩選 -->
                 <select id="categoryFilter" class="px-3 py-2 border rounded-lg text-sm">
                     <option value="all">所有類型</option>
-                    <option value="museum">博物館</option>
-                    <option value="park">公園</option>
-                    <option value="playhouse">遊樂場</option>
-                    <option value="restaurant">餐廳</option>
+                    <option value="playhouse">🎪 遊樂場</option>
+                    <option value="park">🌳 公園</option>
+                    <option value="museum">🏛️ 博物館/展覽</option>
                 </select>
 
+                <!-- 人均消費 -->
+                <select id="priceFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何消費</option>
+                    <option value="0-100">$0-100</option>
+                    <option value="100-200">$100-200</option>
+                    <option value="200-400">$200-400</option>
+                    <option value="400+">$400+</option>
+                </select>
+
+                <!-- 適合年齡 -->
                 <select id="ageFilter" class="px-3 py-2 border rounded-lg text-sm">
                     <option value="all">任何年齡</option>
-                    <option value="0">0-3歲</option>
-                    <option value="3">3-6歲</option>
-                    <option value="6">6-12歲</option>
+                    <option value="0-1">0-1歲</option>
+                    <option value="1-2">1-2歲</option>
+                    <option value="2-3">2-3歲</option>
+                    <option value="3-6">3-6歲</option>
+                    <option value="6-12">6-12歲</option>
+                    <option value="12+">12歲+</option>
                 </select>
 
-                <label class="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input type="checkbox" id="indoorFilter" class="rounded">
-                    <span class="text-sm">室內</span>
-                </label>
-
-                <label class="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input type="checkbox" id="freeFilter" class="rounded">
-                    <span class="text-sm">免費</span>
-                </label>
+                <!-- 室內/室外 -->
+                <select id="indoorFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">室內/室外</option>
+                    <option value="indoor">🏠 室內</option>
+                    <option value="outdoor">☀️ 室外</option>
+                </select>
             </div>
         </div>
     </div>
@@ -242,18 +274,43 @@
             const region = document.getElementById('regionFilter').value;
             const category = document.getElementById('categoryFilter').value;
             const age = document.getElementById('ageFilter').value;
-            const indoor = document.getElementById('indoorFilter').checked;
-            const free = document.getElementById('freeFilter').checked;
+            const price = document.getElementById('priceFilter').value;
+            const indoor = document.getElementById('indoorFilter').value;
 
             const filtered = locations.filter(l => {
-                if (region !== 'all' && l.region !== region) return false;
+                // 地區篩選（十八區）
+                if (region !== 'all' && !l.district.includes(region)) return false;
+                
+                // 類別篩選
                 if (category !== 'all' && l.category !== category) return false;
+                
+                // 年齡篩選（0-1, 1-2, 2-3, 3-6, 6-12, 12+）
                 if (age !== 'all') {
-                    const ageNum = parseInt(age);
-                    if (ageNum < l.ageRange[0] || ageNum > l.ageRange[1]) return false;
+                    const [minAge, maxAge] = age.split('-').map(a => a === '12+' ? 12 : parseInt(a));
+                    if (maxAge) {
+                        // 範圍檢查（例如 3-6）
+                        if (l.ageRange[1] < minAge || l.ageRange[0] > maxAge) return false;
+                    } else {
+                        // 12+ 檢查
+                        if (l.ageRange[1] < 12) return false;
+                    }
                 }
-                if (indoor && !l.indoor) return false;
-                if (free && l.priceType !== 'free') return false;
+                
+                // 消費篩選
+                if (price !== 'all') {
+                    const priceMap = {
+                        '0-100': ['free', 'low'],
+                        '100-200': ['medium'],
+                        '200-400': ['high'],
+                        '400+': ['high']
+                    };
+                    if (!priceMap[price].includes(l.priceType)) return false;
+                }
+                
+                // 室內/室外篩選
+                if (indoor === 'indoor' && !l.indoor) return false;
+                if (indoor === 'outdoor' && l.indoor) return false;
+                
                 return true;
             });
 
@@ -441,6 +498,13 @@
                 document.getElementById('resultCount').textContent = `已按距離排序 - 共 ${sorted.length} 個地點`;
             }
         }
+
+        // Event listeners for filters
+        document.getElementById('regionFilter').addEventListener('change', renderLocations);
+        document.getElementById('categoryFilter').addEventListener('change', renderLocations);
+        document.getElementById('ageFilter').addEventListener('change', renderLocations);
+        document.getElementById('priceFilter').addEventListener('change', renderLocations);
+        document.getElementById('indoorFilter').addEventListener('change', renderLocations);
 
         // Locate button event
         document.getElementById('locateBtn').addEventListener('click', locateUser);
