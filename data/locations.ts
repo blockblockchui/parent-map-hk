@@ -1,4 +1,7 @@
 // 50個親子地點 - 完整資料 (精簡版)
+// verified: true = 人手驗證 | false = 自動搜集未驗證
+// autoDiscovered: true = Scout 自動發現
+
 export const locations = [
   {
     id: "001", name: "樹屋 Baumhaus", district: "灣仔", region: "hk-island",

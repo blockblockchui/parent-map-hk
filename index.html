@@ -391,6 +391,7 @@
                         <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
                             ${categoryLabels[l.category]}
                         </span>
+                        ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded ml-1">⚠️ 未驗證</span>' : ''}
                         <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
                         ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
                         
