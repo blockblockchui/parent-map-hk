@@ -392,7 +392,7 @@
                             ${categoryLabels[l.category]}
                         </span>
                         <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
-                        <p class="text-xs text-gray-500">${l.nameEn}</p>
+                        ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
                         
                         <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
                             <span>📍</span>
