@@ -62,8 +62,13 @@
         </div>
     </div>
 
-    <!-- Map -->
-    <div id="map"></div>
+    <!-- Map with Locate Button -->
+    <div class="relative">
+        <div id="map"></div>
+        <button id="locateBtn" class="absolute bottom-4 right-4 z-[500] bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors" title="定位我的位置">
+            📍 定位我
+        </button>
+    </div>
 
     <!-- Results -->
     <div class="max-w-7xl mx-auto px-4 py-6">
@@ -326,6 +331,119 @@
         document.getElementById('ageFilter').addEventListener('change', renderLocations);
         document.getElementById('indoorFilter').addEventListener('change', renderLocations);
         document.getElementById('freeFilter').addEventListener('change', renderLocations);
+
+        // User location marker
+        let userMarker = null;
+        let userCircle = null;
+
+        // Geolocation function
+        function locateUser() {
+            const btn = document.getElementById('locateBtn');
+            btn.textContent = '📍 定位中...';
+            
+            if (!navigator.geolocation) {
+                alert('你的瀏覽器不支援定位功能');
+                btn.textContent = '📍 定位我';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+
+                    // Remove old marker
+                    if (userMarker) {
+                        map.removeLayer(userMarker);
+                        map.removeLayer(userCircle);
+                    }
+
+                    // Add user marker
+                    userMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'custom-div-icon',
+                            html: "<div style='background-color:#3b82f6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);'></div>",
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        })
+                    }).addTo(map).bindPopup('📍 你的位置').openPopup();
+
+                    // Add accuracy circle
+                    userCircle = L.circle([lat, lng], {
+                        radius: accuracy,
+                        color: '#3b82f6',
+                        fillColor: '#3b82f6',
+                        fillOpacity: 0.1
+                    }).addTo(map);
+
+                    // Center map on user
+                    map.setView([lat, lng], 14);
+
+                    // Sort locations by distance
+                    sortByDistance(lat, lng);
+
+                    btn.textContent = '📍 已定位';
+                    setTimeout(() => {
+                        btn.textContent = '📍 定位我';
+                    }, 3000);
+                },
+                (error) => {
+                    let message = '無法獲取位置';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            message = '請允許使用定位功能';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            message = '位置資訊不可用';
+                            break;
+                        case error.TIMEOUT:
+                            message = '定位超時，請重試';
+                            break;
+                    }
+                    alert(message);
+                    btn.textContent = '📍 定位我';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+
+        // Calculate distance between two points (Haversine formula)
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371; // Earth's radius in km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Sort locations by distance from user
+        function sortByDistance(userLat, userLng) {
+            const sorted = [...locations].sort((a, b) => {
+                const distA = calculateDistance(userLat, userLng, a.lat, a.lng);
+                const distB = calculateDistance(userLat, userLng, b.lat, b.lng);
+                return distA - distB;
+            });
+            
+            // Update list with distance info
+            const listEl = document.getElementById('locationList');
+            const currentFilter = document.getElementById('regionFilter').value;
+            
+            // Only show if not filtering by region
+            if (currentFilter === 'all') {
+                document.getElementById('resultCount').textContent = `已按距離排序 - 共 ${sorted.length} 個地點`;
+            }
+        }
+
+        // Locate button event
+        document.getElementById('locateBtn').addEventListener('click', locateUser);
 
         // Initial render
         renderLocations();
