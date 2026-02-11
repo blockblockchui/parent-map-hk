@@ -62,7 +62,7 @@ def search_google_places(query, location="Hong Kong"):
             return []
         
         results = []
-        for place in data.get("results", [])[:5]:  # 只取前 5 個
+        for place in data.get("results", [])[:10]:  # 每個關鍵字取 10 個
             results.append({
                 "name": place.get("name"),
                 "address": place.get("formatted_address"),
@@ -195,7 +195,7 @@ def main():
     
     new_locations = []
     
-    for query in search_queries[:2]:  # 每日只搜 2 個關鍵字（避免太多）
+    for query in search_queries:  # 搜尋所有關鍵字
         log(f"\n🔍 搜尋: {query}")
         
         # Google Places 搜尋
@@ -203,6 +203,11 @@ def main():
         log(f"   找到 {len(places)} 個地點")
         
         for place in places:
+            # 每日最多 50 個
+            if len(new_locations) >= 50:
+                log(f"   ⏹️ 已達每日上限 (50個)，停止搜集")
+                break
+            
             # 檢查是否已存在
             if place["name"] in existing_names:
                 log(f"   ⏭️ 已存在: {place['name']}")
