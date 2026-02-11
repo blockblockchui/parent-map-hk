@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香港親子地圖 | Parent Map HK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        #map { height: 400px; width: 100%; }
+        .leaflet-popup-content { font-family: 'Noto Sans TC', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-10">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <h1 class="text-2xl font-bold text-gray-900">🗺️ 香港親子地圖</h1>
+            <p class="text-sm text-gray-600">發掘全港最適合親子活動的好去處</p>
+        </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-wrap gap-3">
+                <select id="regionFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">所有地區</option>
+                    <option value="hk-island">港島</option>
+                    <option value="kowloon">九龍</option>
+                    <option value="nt">新界</option>
+                </select>
+
+                <select id="categoryFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">所有類型</option>
+                    <option value="museum">博物館</option>
+                    <option value="park">公園</option>
+                    <option value="playhouse">遊樂場</option>
+                    <option value="restaurant">餐廳</option>
+                </select>
+
+                <select id="ageFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何年齡</option>
+                    <option value="0">0-3歲</option>
+                    <option value="3">3-6歲</option>
+                    <option value="6">6-12歲</option>
+                </select>
+
+                <label class="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="checkbox" id="indoorFilter" class="rounded">
+                    <span class="text-sm">室內</span>
+                </label>
+
+                <label class="flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input type="checkbox" id="freeFilter" class="rounded">
+                    <span class="text-sm">免費</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Results -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">📍 地點列表</h2>
+            <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
+        </div>
+        
+        <div id="locationList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Locations will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // Location data
+        const locations = [
+            {
+                id: "001",
+                name: "香港科學館",
+                nameEn: "Hong Kong Science Museum",
+                category: "museum",
+                district: "尖沙咀",
+                region: "kowloon",
+                address: "尖沙咀東部科學館道2號",
+                lat: 22.3015,
+                lng: 114.1790,
+                ageRange: [3, 12],
+                indoor: true,
+                priceType: "free",
+                hasBabyRoom: true,
+                hasStrollerAccess: true,
+                hasRestaurant: false,
+                rainyDaySuitable: true,
+                openingHours: "10:00-19:00（周三休館）",
+                priceDescription: "免費入場，部分展覽收費",
+                phone: "2732 3232",
+                website: "https://hk.science.museum",
+                description: "互動式科學展覽，小朋友可以動手體驗各種科學原理。有能量傳遞球、鏡子世界等受歡迎展區。",
+                tips: "建議平日去，周末人較多"
+            },
+            {
+                id: "002",
+                name: "香港太空館",
+                nameEn: "Hong Kong Space Museum",
+                category: "museum",
+                district: "尖沙咀",
+                region: "kowloon",
+                address: "尖沙咀梳士巴利道10號",
+                lat: 22.2956,
+                lng: 114.1723,
+                ageRange: [4, 12],
+                indoor: true,
+                priceType: "low",
+                hasBabyRoom: true,
+                hasStrollerAccess: true,
+                hasRestaurant: false,
+                rainyDaySuitable: true,
+                openingHours: "13:00-21:00（周一、三、四、五）\n10:00-21:00（周末及假期）\n周二休館",
+                priceDescription: "展覽廳：$10，天象廳：$24-$32",
+                phone: "2721 0226",
+                website: "https://hk.space.museum",
+                description: "蛋形建築內有宇宙展覽、天象廳播放星空節目，適合對太空有興趣的小朋友。",
+                tips: "天象廳節目要預先買票"
+            },
+            {
+                id: "003",
+                name: "香港動植物公園",
+                nameEn: "Hong Kong Zoological and Botanical Gardens",
+                category: "park",
+                district: "中環",
+                region: "hk-island",
+                address: "中環雅賓利道",
+                lat: 22.2783,
+                lng: 114.1555,
+                ageRange: [0, 12],
+                indoor: false,
+                priceType: "free",
+                hasBabyRoom: true,
+                hasStrollerAccess: true,
+                hasRestaurant: true,
+                rainyDaySuitable: false,
+                openingHours: "05:00-22:00",
+                priceDescription: "免費入場",
+                phone: "2530 0154",
+                website: "https://www.lcsd.gov.hk/tc/parks/hkzbg/",
+                description: "位於中環的綠洲，有紅鸛、狐猴等動物，也有植物溫室。大草坪適合小朋友奔跑。",
+                tips: "有斜路推嬰兒車要小心"
+            },
+            {
+                id: "004",
+                name: "The Big Things",
+                nameEn: "The Big Things Playground",
+                category: "playhouse",
+                district: "荃灣",
+                region: "nt",
+                address: "荃灣南豐紗廠",
+                lat: 22.3756,
+                lng: 114.1094,
+                ageRange: [0, 8],
+                indoor: true,
+                priceType: "medium",
+                hasBabyRoom: true,
+                hasStrollerAccess: true,
+                hasRestaurant: true,
+                rainyDaySuitable: true,
+                openingHours: "10:00-18:00",
+                priceDescription: "$160（1大1小）",
+                phone: "3619 0633",
+                website: "https://www.thebigthings.com.hk",
+                description: "以大自然為主題的室內遊樂場，有木粒沙池、繩網、滑梯等。環境乾淨，職員友善。",
+                tips: "記得帶襪，大人細路都要"
+            },
+            {
+                id: "005",
+                name: "香港濕地公園",
+                nameEn: "Hong Kong Wetland Park",
+                category: "park",
+                district: "天水圍",
+                region: "nt",
+                address: "天水圍濕地公園路",
+                lat: 22.4667,
+                lng: 114.0083,
+                ageRange: [3, 12],
+                indoor: true,
+                priceType: "low",
+                hasBabyRoom: true,
+                hasStrollerAccess: true,
+                hasRestaurant: true,
+                rainyDaySuitable: true,
+                openingHours: "10:00-17:00（周一休館）",
+                priceDescription: "$30（成人），$15（小童），周三免費",
+                phone: "3152 2666",
+                website: "https://www.wetlandpark.gov.hk",
+                description: "室內展覽館介紹濕地生態，戶外有觀鳥屋、紅樹林步道。可以近距離觀察雀鳥。",
+                tips: "帶望遠鏡觀鳥更佳"
+            }
+        ];
+
+        const categoryLabels = {
+            museum: '博物館',
+            park: '公園',
+            playhouse: '遊樂場',
+            restaurant: '餐廳',
+            library: '圖書館'
+        };
+
+        const regionLabels = {
+            'hk-island': '港島',
+            'kowloon': '九龍',
+            'nt': '新界'
+        };
+
+        const priceLabels = {
+            free: '免費',
+            low: '低消費',
+            medium: '中消費',
+            high: '高消費'
+        };
+
+        // Initialize Leaflet map
+        const map = L.map('map').setView([22.32, 114.17], 11);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Filter state
+        let markers = [];
+
+        function renderLocations() {
+            const region = document.getElementById('regionFilter').value;
+            const category = document.getElementById('categoryFilter').value;
+            const age = document.getElementById('ageFilter').value;
+            const indoor = document.getElementById('indoorFilter').checked;
+            const free = document.getElementById('freeFilter').checked;
+
+            const filtered = locations.filter(l => {
+                if (region !== 'all' && l.region !== region) return false;
+                if (category !== 'all' && l.category !== category) return false;
+                if (age !== 'all') {
+                    const ageNum = parseInt(age);
+                    if (ageNum < l.ageRange[0] || ageNum > l.ageRange[1]) return false;
+                }
+                if (indoor && !l.indoor) return false;
+                if (free && l.priceType !== 'free') return false;
+                return true;
+            });
+
+            // Update list
+            const listEl = document.getElementById('locationList');
+            const countEl = document.getElementById('resultCount');
+            
+            countEl.textContent = `共 ${filtered.length} 個地點`;
+            
+            listEl.innerHTML = filtered.map(l => `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                    <div class="h-40 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
+                        <span class="text-white text-4xl">🎯</span>
+                    </div>
+                    <div class="p-4">
+                        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                            ${categoryLabels[l.category]}
+                        </span>
+                        <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
+                        <p class="text-xs text-gray-500">${l.nameEn}</p>
+                        
+                        <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
+                            <span>📍</span>
+                            <span>${regionLabels[l.region]} · ${l.district}</span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : ''}
+                            ${l.rainyDaySuitable ? '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">☂️雨天適合</span>' : ''}
+                            ${l.hasBabyRoom ? '<span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">👶哺乳室</span>' : ''}
+                            ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm mb-3">
+                            <span class="text-gray-600">適合：${l.ageRange[0]}-${l.ageRange[1]}歲</span>
+                            <span class="font-medium ${l.priceType === 'free' ? 'text-green-600' : 'text-gray-700'}">${priceLabels[l.priceType]}</span>
+                        </div>
+
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description}</p>
+
+                        <div class="flex items-start gap-2 text-xs text-gray-500 mb-3">
+                            <span>🕐</span>
+                            <span class="line-clamp-2">${l.openingHours.replace(/\n/g, ' ')}</span>
+                        </div>
+
+                        <div class="flex gap-2 pt-3 border-t">
+                            ${l.phone ? `<a href="tel:${l.phone}" class="flex-1 py-2 text-sm text-gray-700 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors">📞 電話</a>` : ''}
+                            ${l.website ? `<a href="${l.website}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">🌐 網站</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Update map markers
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            filtered.forEach(l => {
+                const marker = L.marker([l.lat, l.lng])
+                    .addTo(map)
+                    .bindPopup(`<b>${l.name}</b><br>${categoryLabels[l.category]}`);
+                markers.push(marker);
+            });
+
+            // Fit map to markers
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Event listeners
+        document.getElementById('regionFilter').addEventListener('change', renderLocations);
+        document.getElementById('categoryFilter').addEventListener('change', renderLocations);
+        document.getElementById('ageFilter').addEventListener('change', renderLocations);
+        document.getElementById('indoorFilter').addEventListener('change', renderLocations);
+        document.getElementById('freeFilter').addEventListener('change', renderLocations);
+
+        // Initial render
+        renderLocations();
+    </script>
+</body>
+</html>
