@@ -1,0 +1,69 @@
+# Parent Map HK - Data Sources Configuration (低成本版本)
+# 不使用 LLM，只用免費 RSS 和簡單 HTTP 檢查
+
+sources:
+  # RSS Feed Sources (免費)
+  - name: "U Lifestyle 親子"
+    type: rss
+    url: "https://www.ulifestyle.com.hk/rss/topic/%E8%A6%AA%E5%AD%90"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "published"
+      summary: "summary"
+    recency_window_days: 30
+    category_keywords: ["playhouse", "室內遊樂場", "親子好去處", "放電", "兒童"]
+    enabled: true
+
+  - name: "新假期 親子"
+    type: rss
+    url: "https://www.weekendhk.com/feed/"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "published"
+      summary: "description"
+    recency_window_days: 30
+    category_keywords: ["playhouse", "室內遊樂場", "親子", "兒童", "放電"]
+    enabled: true
+
+  - name: "Oh!爸媽 RSS"
+    type: rss
+    url: "https://www.ohmykids.hk/feed/"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "published"
+      summary: "description"
+    recency_window_days: 60
+    category_keywords: ["playhouse", "室內", "親子", "好去處"]
+    enabled: true
+
+  - name: "親子頭條"
+    type: rss
+    url: "https://www.parentingheadline.com/feed/"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "published"
+      summary: "description"
+    recency_window_days: 30
+    category_keywords: ["playhouse", "室內", "遊樂場", "親子"]
+    enabled: true
+
+# 低成本驗證（不用 LLM）
+validation:
+  http_timeout: 10
+  http_retries: 3
+  content_hash_algorithm: "sha256"
+  hash_cache_ttl_hours: 24
+  
+  # 不用 LLM，只做基本 HTTP 200 檢查
+  use_llm: false
+  min_evidence_urls: 1
+
+# 輸出設定
+export:
+  output_path: "../data/locations.json"
+  dry_run: false
+  git_auto_commit: false
