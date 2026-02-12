@@ -131,8 +131,8 @@
     <div class="md:hidden bg-white border-b px-4 py-2">
         <button id="mapToggleBtn" class="w-full flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium">
             <span id="mapToggleIcon">🗺️</span>
-            <span id="mapToggleText">顯示地圖</span>
-            <svg id="mapToggleArrow" class="w-4 h-4 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <span id="mapToggleText">隱藏地圖</span>
+            <svg id="mapToggleArrow" class="w-4 h-4 transform transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
         </button>
@@ -1117,22 +1117,6 @@
                 }
             });
         }
-
-        // Mobile detection - hide map by default on mobile
-        function initMapVisibility() {
-            const isMobile = window.innerWidth < 768; // md breakpoint
-            const mapContainer = document.getElementById('mapContainer');
-            
-            if (isMobile && mapContainer) {
-                mapContainer.classList.add('hidden');
-            }
-        }
-        
-        // Run on page load
-        initMapVisibility();
-        
-        // Also run on resize
-        window.addEventListener('resize', initMapVisibility);
 
         // Initial render
         renderLocations();
