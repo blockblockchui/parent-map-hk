@@ -67,6 +67,7 @@ for record in records:
         "priceDescription": record.get('price_description', '$100-200'),
         "description": record.get('description', ''),
         "website": record.get('website_url') or None,
+        "googleMapsUrl": record.get('google_maps_url') or None,  # NEW
         "tips": record.get('tips') or None,
         "openingHours": record.get('opening_hours', '請查詢官網'),
         "address": record.get('address', ''),
@@ -76,6 +77,8 @@ for record in records:
         "rainyDaySuitable": True,
         "verified": record.get('validation_stage') == 'human_confirmed',
         "updatedAt": record.get('updated_at'),
+        "checkedAt": record.get('checked_at'),  # NEW
+        "sourceUrls": record.get('source_urls'),  # NEW
     }
     locations.append(location)
 
