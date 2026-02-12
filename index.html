@@ -140,14 +140,6 @@
                     <option value="5000">📍 5公里內</option>
                 </select>
 
-                <!-- 排序方式 -->
-                <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
-                    <option value="updated">📅 排序：最近更新</option>
-                    <option value="default">📍 排序：距離最近</option>
-                    <option value="price-asc">💰 排序：價格低→高</option>
-                    <option value="price-desc">💰 排序：價格高→低</option>
-                </select>
-
                 <!-- 開放日 -->
                 <select id="dayFilter" class="px-3 py-2 border rounded-lg text-sm">
                     <option value="all">任何日子</option>
@@ -202,9 +194,18 @@
 
     <!-- Results -->
     <div class="max-w-7xl mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 class="text-lg font-semibold">📍 地點列表</h2>
-            <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
+            <div class="flex items-center gap-2">
+                <!-- 排序方式 -->
+                <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
+                    <option value="updated">📅 排序：最近更新</option>
+                    <option value="default">📍 排序：距離最近</option>
+                    <option value="price-asc">💰 排序：價格低→高</option>
+                    <option value="price-desc">💰 排序：價格高→低</option>
+                </select>
+                <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
+            </div>
         </div>
         
         <div id="locationList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1058,12 +1059,18 @@
             });
         }
 
-        // 設置默認篩選條件（Phase 1: 一入嚟就有答案）
+        // 設置默認篩選條件（全部清空）
         function setDefaultFilters() {
-            // 默認：室內、3-6歲、距離2km（如果有定位）
-            document.getElementById('indoorFilter').value = 'indoor';
-            document.getElementById('ageFilter').value = '3-6';
-            document.getElementById('distanceFilter').value = '2000';
+            // 所有篩選設為默認值（全部）
+            document.getElementById('regionFilter').value = 'all';
+            document.getElementById('categoryFilter').value = 'all';
+            document.getElementById('ageFilter').value = 'all';
+            document.getElementById('priceFilter').value = 'all';
+            document.getElementById('indoorFilter').value = 'all';
+            document.getElementById('distanceFilter').value = 'all';
+            document.getElementById('dayFilter').value = 'all';
+            document.getElementById('timeFilter').value = 'all';
+            document.getElementById('sortFilter').value = 'updated';
         }
 
         // 推薦場景按鈕事件
