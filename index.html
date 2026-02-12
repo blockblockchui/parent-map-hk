@@ -42,6 +42,22 @@
                     <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="park">🌳 公園</button>
                     <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="museum">🏛️ 博物館</button>
                 </div>
+                
+                <!-- 🎯 推薦場景入口 -->
+                <div class="mt-6 flex flex-wrap justify-center gap-2 px-2">
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="rainy">
+                        🌧️ 雨天好去處
+                    </button>
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="baby">
+                        🧒 2歲以下適合
+                    </button>
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="birthday">
+                        🎂 可辦生日會
+                    </button>
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="mtr">
+                        🚇 近地鐵
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -122,6 +138,14 @@
                     <option value="1000">📍 1公里內</option>
                     <option value="2000">📍 2公里內</option>
                     <option value="5000">📍 5公里內</option>
+                </select>
+
+                <!-- 排序方式 -->
+                <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
+                    <option value="default">🔥 智能推薦</option>
+                    <option value="updated">📅 最近更新</option>
+                    <option value="price-asc">💰 價格由低至高</option>
+                    <option value="price-desc">💰 價格由高至低</option>
                 </select>
 
                 <!-- 開放日 -->
@@ -766,6 +790,42 @@
             return true;
         }
 
+        // 獲取價格數值（用於排序）
+        function getPriceValue(priceType) {
+            const priceValues = {
+                'free': 0,
+                'low': 1,
+                'medium': 2,
+                'high': 3
+            };
+            return priceValues[priceType] || 2;
+        }
+
+        // 獲取價格符號（$ / $$ / $$$）
+        function getPriceSymbol(priceType) {
+            const symbols = {
+                'free': '🆓 免費',
+                'low': '$',
+                'medium': '$$',
+                'high': '$$$'
+            };
+            return symbols[priceType] || '$$';
+        }
+
+        // 格式化日期顯示
+        function formatLastUpdated(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            const now = new Date();
+            const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return '今日更新';
+            if (diffDays === 1) return '昨日更新';
+            if (diffDays < 7) return `${diffDays}日前更新`;
+            if (diffDays < 30) return `${Math.floor(diffDays / 7)}星期前更新`;
+            return `${d.getMonth() + 1}月${d.getDate()}日更新`;
+        }
+
         // 檢查開放時間是否匹配
         function checkOpenTime(openingHours, selectedTime) {
             if (selectedTime === 'all') return true;
@@ -865,31 +925,52 @@
                         );
                         return dist <= maxDistance;
                     });
-                    
-                    // 按距離排序
-                    filtered.sort((a, b) => {
-                        const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
-                        const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
-                        return distA - distB;
-                    });
                 }
+            }
+
+            // 🎯 排序功能
+            const sortValue = document.getElementById('sortFilter').value;
+            switch(sortValue) {
+                case 'updated':
+                    // 最近更新（假設有 updatedAt 欄位，冇就用 id 倒序）
+                    filtered.sort((a, b) => (b.updatedAt || b.id) - (a.updatedAt || a.id));
+                    break;
+                case 'price-asc':
+                    filtered.sort((a, b) => getPriceValue(a.priceType) - getPriceValue(b.priceType));
+                    break;
+                case 'price-desc':
+                    filtered.sort((a, b) => getPriceValue(b.priceType) - getPriceValue(a.priceType));
+                    break;
+                default:
+                    // 智能推薦：有定位就按距離，冇就按評分/熱度
+                    if (userLocation) {
+                        filtered.sort((a, b) => {
+                            const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
+                            const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
+                            return distA - distB;
+                        });
+                    }
+                    break;
             }
 
             // Update list
             const listEl = document.getElementById('locationList');
             const countEl = document.getElementById('resultCount');
             
-            // 顯示結果數量
+            // 🎯 顯示結果數量（更友好嘅文案）
             let countText = '';
+            const indoorText = indoor === 'indoor' ? '室內' : '';
+            const ageText = age !== 'all' ? document.getElementById('ageFilter').options[document.getElementById('ageFilter').selectedIndex].text.replace('歲', '') : '';
+            
             if (showFavoritesOnly) {
                 countText = `❤️ 我的收藏: ${filtered.length} 個地點`;
-            } else if (userLocation) {
-                if (distance !== 'all') {
-                    const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
-                    countText = `📍 ${distanceText}內找到 ${filtered.length} 個地點`;
-                } else {
-                    countText = `📍 已按距離排序 - 共 ${filtered.length} 個地點`;
-                }
+            } else if (filtered.length === 0) {
+                countText = `😅 暫時找不到符合條件的地點，試下放寬篩選？`;
+            } else if (userLocation && distance !== 'all') {
+                const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
+                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText}${ageText}放電好去處（${distanceText}內）`;
+            } else if (sortValue === 'updated') {
+                countText = `📅 最近更新: 共 ${filtered.length} 個地點`;
             } else if (day !== 'all' || time !== 'all') {
                 const dayNames = { 'mon': '周一', 'tue': '周二', 'wed': '周三', 'thu': '周四', 'fri': '周五', 'sat': '周六', 'sun': '周日' };
                 const timeNames = { 'morning': '早上', 'afternoon': '下午', 'evening': '晚上' };
@@ -897,9 +978,11 @@
                 const timeText = time !== 'all' ? timeNames[time] : '';
                 countText = `🕐 ${dayText}${timeText}開放: ${filtered.length} 個地點`;
             } else {
-                countText = `共 ${filtered.length} 個地點`;
+                // 🎯 Phase 1: 預設文案
+                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText || '室內'}${ageText || '0-6歲'}放電好去處`;
             }
             countEl.textContent = countText;
+            countEl.className = 'text-sm text-gray-600 font-medium';
             
             // Category icons and colors
             const categoryIcons = {
@@ -957,16 +1040,20 @@
                             ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
                         </div>
 
-                        <div class="flex items-center justify-between text-sm mb-3">
-                            <span class="text-gray-600">適合：${l.ageRange[0]}-${l.ageRange[1]}歲</span>
-                            <span class="font-medium ${l.priceType === 'free' ? 'text-green-600' : 'text-gray-700'}">${priceLabels[l.priceType]}</span>
+                        <!-- 🎯 信任元素：年齡 + 價格 + 更新日期 -->
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">${l.ageRange[0]}-${l.ageRange[1]}歲</span>
+                            <span class="text-xs font-medium ${l.priceType === 'free' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded">${getPriceSymbol(l.priceType)}</span>
+                            ${l.updatedAt ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">🕐 ${formatLastUpdated(l.updatedAt)}</span>` : '<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">🕐 2026年2月更新</span>'}
                         </div>
 
-                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description}</p>
+                        <!-- 🎯 80字摘要 -->
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description.substring(0, 80)}${l.description.length > 80 ? '...' : ''}</p>
 
+                        <!-- 🎯 開放時間（簡化顯示） -->
                         <div class="flex items-start gap-2 text-xs text-gray-500 mb-3">
                             <span>🕐</span>
-                            <span class="line-clamp-2">${l.openingHours.replace(/\n/g, ' ')}</span>
+                            <span class="line-clamp-1">${l.openingHours.split('\\n')[0]}</span>
                         </div>
 
                         <div class="flex gap-2 pt-3 border-t">
@@ -1257,6 +1344,7 @@
         document.getElementById('indoorFilter').addEventListener('change', renderLocations);
         document.getElementById('dayFilter').addEventListener('change', renderLocations);
         document.getElementById('timeFilter').addEventListener('change', renderLocations);
+        document.getElementById('sortFilter').addEventListener('change', renderLocations);
         
         // Favorites filter button
         const favoritesFilterBtn = document.getElementById('favoritesFilter');
@@ -1317,6 +1405,61 @@
             });
         }
 
+        // 設置默認篩選條件（Phase 1: 一入嚟就有答案）
+        function setDefaultFilters() {
+            // 默認：室內、0-6歲、距離2km（如果有定位）
+            document.getElementById('indoorFilter').value = 'indoor';
+            document.getElementById('ageFilter').value = '0-6';
+            document.getElementById('distanceFilter').value = '2000';
+        }
+
+        // 推薦場景按鈕事件
+        document.querySelectorAll('.scenario-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const scenario = this.dataset.scenario;
+                
+                // 重置所有篩選
+                document.getElementById('regionFilter').value = 'all';
+                document.getElementById('categoryFilter').value = 'all';
+                document.getElementById('ageFilter').value = 'all';
+                document.getElementById('priceFilter').value = 'all';
+                document.getElementById('indoorFilter').value = 'all';
+                document.getElementById('distanceFilter').value = 'all';
+                
+                // 根據場景設置篩選
+                switch(scenario) {
+                    case 'rainy':
+                        document.getElementById('indoorFilter').value = 'indoor';
+                        break;
+                    case 'baby':
+                        document.getElementById('ageFilter').value = '0-2';
+                        break;
+                    case 'birthday':
+                        // 生日會場地通常係室內 + 3-12歲
+                        document.getElementById('indoorFilter').value = 'indoor';
+                        document.getElementById('ageFilter').value = '3-6';
+                        break;
+                    case 'mtr':
+                        // 近地鐵需要定位
+                        if (!userLocation) {
+                            alert('請先點擊「📍 定位我」以查找附近地鐵站');
+                            document.getElementById('distanceFilter').value = '800';
+                        } else {
+                            document.getElementById('distanceFilter').value = '800';
+                        }
+                        break;
+                }
+                
+                renderLocations();
+                
+                // 滾動到結果區
+                document.getElementById('locationList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // 設置默認篩選並渲染
+        setDefaultFilters();
+        
         // Initial render
         renderLocations();
     </script>
