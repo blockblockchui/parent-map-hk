@@ -142,10 +142,10 @@
 
                 <!-- 排序方式 -->
                 <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
-                    <option value="default">🔥 智能推薦</option>
-                    <option value="updated">📅 最近更新</option>
-                    <option value="price-asc">💰 價格由低至高</option>
-                    <option value="price-desc">💰 價格由高至低</option>
+                    <option value="default">🔥 排序：智能推薦</option>
+                    <option value="updated">📅 排序：最近更新</option>
+                    <option value="price-asc">💰 排序：價格低→高</option>
+                    <option value="price-desc">💰 排序：價格高→低</option>
                 </select>
 
                 <!-- 開放日 -->
@@ -979,7 +979,7 @@
                 countText = `🕐 ${dayText}${timeText}開放: ${filtered.length} 個地點`;
             } else {
                 // 🎯 Phase 1: 預設文案
-                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText || '室內'}${ageText || '0-6歲'}放電好去處`;
+                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText || '室內'}${ageText || '3-6歲'}放電好去處`;
             }
             countEl.textContent = countText;
             countEl.className = 'text-sm text-gray-600 font-medium';
@@ -1407,9 +1407,9 @@
 
         // 設置默認篩選條件（Phase 1: 一入嚟就有答案）
         function setDefaultFilters() {
-            // 默認：室內、0-6歲、距離2km（如果有定位）
+            // 默認：室內、3-6歲、距離2km（如果有定位）
             document.getElementById('indoorFilter').value = 'indoor';
-            document.getElementById('ageFilter').value = '0-6';
+            document.getElementById('ageFilter').value = '3-6';
             document.getElementById('distanceFilter').value = '2000';
         }
 
@@ -1432,7 +1432,7 @@
                         document.getElementById('indoorFilter').value = 'indoor';
                         break;
                     case 'baby':
-                        document.getElementById('ageFilter').value = '0-2';
+                        document.getElementById('ageFilter').value = '0-1'; // 0-1歲
                         break;
                     case 'birthday':
                         // 生日會場地通常係室內 + 3-12歲
