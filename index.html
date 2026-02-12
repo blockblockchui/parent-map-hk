@@ -125,7 +125,7 @@
                 </select>
 
                 <!-- 我的收藏 -->
-                <button id="favoritesFilter" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm hover:bg-red-100 transition-colors hidden">
+                <button id="favoritesFilter" class="px-3 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50">
                     ❤️ 我的收藏 (<span id="favCount">0</span>)
                 </button>
             </div>
@@ -655,18 +655,23 @@
         let favorites = JSON.parse(localStorage.getItem('parentMapFavorites') || '[]');
         let showFavoritesOnly = false;
 
-        // Update favorites count and button visibility
+        // Update favorites count and button style
         function updateFavoritesUI() {
             const favCount = favorites.length;
             document.getElementById('favCount').textContent = favCount;
             const favBtn = document.getElementById('favoritesFilter');
+            
             if (favCount > 0) {
-                favBtn.classList.remove('hidden');
+                // 有收藏：變成紅色可用狀態
+                favBtn.classList.remove('bg-gray-100', 'text-gray-400', 'border-gray-200');
+                favBtn.classList.add('bg-red-50', 'text-red-600', 'border-red-200', 'hover:bg-red-100');
+                favBtn.disabled = false;
             } else {
-                favBtn.classList.add('hidden');
+                // 無收藏：greyed out
+                favBtn.classList.remove('bg-red-50', 'text-red-600', 'border-red-200', 'hover:bg-red-100');
+                favBtn.classList.add('bg-gray-100', 'text-gray-400', 'border-gray-200');
+                favBtn.disabled = true;
                 showFavoritesOnly = false;
-                favBtn.classList.remove('bg-red-100', 'border-red-400');
-                favBtn.classList.add('bg-red-50', 'border-red-200');
             }
         }
 
@@ -1141,12 +1146,17 @@
         const favoritesFilterBtn = document.getElementById('favoritesFilter');
         if (favoritesFilterBtn) {
             favoritesFilterBtn.addEventListener('click', function() {
+                // 無收藏時唔執行
+                if (favorites.length === 0) return;
+                
                 showFavoritesOnly = !showFavoritesOnly;
                 if (showFavoritesOnly) {
+                    // 啟用篩選：深色紅色
                     this.classList.remove('bg-red-50', 'border-red-200');
-                    this.classList.add('bg-red-100', 'border-red-400');
+                    this.classList.add('bg-red-200', 'border-red-400', 'ring-2', 'ring-red-300');
                 } else {
-                    this.classList.remove('bg-red-100', 'border-red-400');
+                    // 取消篩選：淺色紅色
+                    this.classList.remove('bg-red-200', 'border-red-400', 'ring-2', 'ring-red-300');
                     this.classList.add('bg-red-50', 'border-red-200');
                 }
                 renderLocations();
