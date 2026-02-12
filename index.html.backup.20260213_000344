@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香港親子地圖 | Parent Map HK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        #map { height: 300px; width: 100%; }
+        @media (min-width: 768px) {
+            #map { height: 400px; }
+        }
+        .leaflet-popup-content { font-family: 'Noto Sans TC', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Hero Section -->
+    <header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div class="max-w-7xl mx-auto px-4 py-6 md:py-12">
+            <div class="text-center">
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">🗺️ 香港親子地圖</h1>
+                <p class="text-base sm:text-lg md:text-xl text-blue-100 mb-6">發掘全港最適合親子活動的好去處</p>
+                
+                <!-- 快速搜尋 -->
+                <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2">
+                    <input type="text" id="searchInput" placeholder="🔍 搜尋地點名稱、地區或類型..." 
+                           class="flex-1 px-4 py-3 rounded-lg text-gray-900 text-base focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    <button id="searchBtn" class="px-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-300 transition-colors whitespace-nowrap">
+                        搜尋
+                    </button>
+                </div>
+                
+                <!-- 快速篩選標籤 -->
+                <div class="mt-4 flex flex-wrap justify-center gap-2 px-2">
+                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="indoor">🏠 室內</button>
+                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="free">🆓 免費</button>
+                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="playhouse">🎪 遊樂場</button>
+                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="park">🌳 公園</button>
+                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="museum">🏛️ 博物館</button>
+                </div>
+                
+                <!-- 🎯 推薦場景入口 -->
+                <div class="mt-6 flex flex-wrap justify-center gap-2 px-2">
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="rainy">
+                        🌧️ 雨天好去處
+                    </button>
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="baby">
+                        🧒 2歲以下適合
+                    </button>
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="birthday">
+                        🎂 可辦生日會
+                    </button>
+                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="mtr">
+                        🚇 近地鐵
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filters -->
+    <div class="bg-white border-b">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex flex-wrap gap-3">
+                <!-- 地區篩選（香港十八區） -->
+                <select id="regionFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">所有地區</option>
+                    <optgroup label="港島">
+                        <option value="中西區">中西區</option>
+                        <option value="灣仔">灣仔</option>
+                        <option value="東區">東區</option>
+                        <option value="南區">南區</option>
+                    </optgroup>
+                    <optgroup label="九龍">
+                        <option value="油尖旺">油尖旺</option>
+                        <option value="深水埗">深水埗</option>
+                        <option value="九龍城">九龍城</option>
+                        <option value="黃大仙">黃大仙</option>
+                        <option value="觀塘">觀塘</option>
+                    </optgroup>
+                    <optgroup label="新界">
+                        <option value="荃灣">荃灣</option>
+                        <option value="屯門">屯門</option>
+                        <option value="元朗">元朗</option>
+                        <option value="北區">北區</option>
+                        <option value="大埔">大埔</option>
+                        <option value="沙田">沙田</option>
+                        <option value="西貢">西貢</option>
+                        <option value="離島">離島</option>
+                        <option value="葵青">葵青</option>
+                    </optgroup>
+                </select>
+
+                <!-- 類別篩選 -->
+                <select id="categoryFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">所有類型</option>
+                    <option value="playhouse">🎪 遊樂場</option>
+                    <option value="park">🌳 公園</option>
+                    <option value="museum">🏛️ 博物館/展覽</option>
+                </select>
+
+                <!-- 人均消費 -->
+                <select id="priceFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何消費</option>
+                    <option value="0-100">$0-100</option>
+                    <option value="100-200">$100-200</option>
+                    <option value="200-400">$200-400</option>
+                    <option value="400+">$400+</option>
+                </select>
+
+                <!-- 適合年齡 -->
+                <select id="ageFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何年齡</option>
+                    <option value="0-1">0-1歲</option>
+                    <option value="1-2">1-2歲</option>
+                    <option value="2-3">2-3歲</option>
+                    <option value="3-6">3-6歲</option>
+                    <option value="6-12">6-12歲</option>
+                    <option value="12+">12歲+</option>
+                </select>
+
+                <!-- 室內/室外 -->
+                <select id="indoorFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">室內/室外</option>
+                    <option value="indoor">🏠 室內</option>
+                    <option value="outdoor">☀️ 室外</option>
+                </select>
+
+                <!-- 距離篩選（需要定位） -->
+                <select id="distanceFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何距離</option>
+                    <option value="400">📍 400米內</option>
+                    <option value="800">📍 800米內</option>
+                    <option value="1000">📍 1公里內</option>
+                    <option value="2000">📍 2公里內</option>
+                    <option value="5000">📍 5公里內</option>
+                </select>
+
+                <!-- 排序方式 -->
+                <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
+                    <option value="default">📍 排序：距離最近</option>
+                    <option value="updated">📅 排序：最近更新</option>
+                    <option value="price-asc">💰 排序：價格低→高</option>
+                    <option value="price-desc">💰 排序：價格高→低</option>
+                </select>
+
+                <!-- 開放日 -->
+                <select id="dayFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何日子</option>
+                    <option value="mon">星期一</option>
+                    <option value="tue">星期二</option>
+                    <option value="wed">星期三</option>
+                    <option value="thu">星期四</option>
+                    <option value="fri">星期五</option>
+                    <option value="sat">星期六</option>
+                    <option value="sun">星期日</option>
+                </select>
+
+                <!-- 開放時間 -->
+                <select id="timeFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何時間</option>
+                    <option value="morning">☀️ 早上 (08:00-12:00)</option>
+                    <option value="afternoon">🌤️ 下午 (12:00-18:00)</option>
+                    <option value="evening">🌙 晚上 (18:00-22:00)</option>
+                </select>
+
+                <!-- 我的收藏 -->
+                <button id="favoritesFilter" class="px-3 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50">
+                    ❤️ 我的收藏 (<span id="favCount">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Toggle Button (Mobile Only) -->
+    <div class="md:hidden bg-white border-b px-4 py-2">
+        <button id="mapToggleBtn" class="w-full flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium">
+            <span id="mapToggleIcon">🗺️</span>
+            <span id="mapToggleText">隱藏地圖</span>
+            <svg id="mapToggleArrow" class="w-4 h-4 transform transition-transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Map with Locate Button -->
+    <div id="mapContainer" class="relative md:block">
+        <div id="map"></div>
+        <button id="locateBtn" class="absolute bottom-4 right-4 z-[500] bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors" title="定位我的位置">
+            📍 定位我
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div class="max-w-7xl mx-auto px-4 py-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">📍 地點列表</h2>
+            <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
+        </div>
+        
+        <div id="locationList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Locations will be inserted here -->
+        </div>
+    </div>
+
+    <script>
+        // Location data
+        const locations = [
+  {
+    id: "001", name: "樹屋 Baumhaus", district: "灣仔", region: "hk-island",
+    lat: 22.2755, lng: 114.1708, category: "playhouse", indoor: true,
+    ageRange: [0, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "木製遊樂空間，提供創意藝術課程及探索樹屋",
+    website: "https://www.baumhaus.com.hk/", tips: "建議預約",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "灣仔 Queen's Road East 36-44號"
+  },
+  {
+    id: "002", name: "Ryze Hong Kong", district: "鰂魚涌", region: "hk-island",
+    lat: 22.2876, lng: 114.2120, category: "playhouse", indoor: true,
+    ageRange: [2, 12], priceType: "high", priceDescription: "$200-400",
+    description: "高能量蹦床公園，設有互聯蹦床、障礙課程",
+    website: "https://www.ryzehongkong.com/", tips: "適合好動小朋友",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "鰂魚涌 Java Road 321號"
+  },
+  {
+    id: "003", name: "Sooper Yoo", district: "堅尼地城", region: "hk-island",
+    lat: 22.2815, lng: 114.1265, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "科技融入運動區，設有互動遊戲、F1式賽車",
+    website: "https://www.sooperyoo.com/", tips: "科技感十足",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "堅尼地城 Belcher's Street 8號"
+  },
+  {
+    id: "004", name: "Kiztopia", district: "多分店", region: "kowloon",
+    lat: 22.3025, lng: 114.1785, category: "playhouse", indoor: true,
+    ageRange: [1, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "教育娛樂遊樂場，設有主題區、滑梯、蹦床",
+    website: "https://kiztopia.com.hk/", tips: "多間分店",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "10:00-20:00", address: "灣仔/將軍澳/沙田/奧海城"
+  },
+  {
+    id: "005", name: "Super Sports Park", district: "大角咀", region: "kowloon",
+    lat: 22.3175, lng: 114.1605, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "high", priceDescription: "$200-400",
+    description: "大型運動主題遊樂場，設有蹦床、攀岩牆",
+    website: "https://www.supersportspark.com/", tips: "運動量大",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "大角咀 Hoi Fai Road 18號"
+  },
+  {
+    id: "006", name: "樂高探索中心", district: "尖沙咀", region: "kowloon",
+    lat: 22.2942, lng: 114.1745, category: "museum", indoor: true,
+    ageRange: [2, 12], priceType: "high", priceDescription: "$200-400",
+    description: "樂高主題中心，設有香港微型複製品、4D電影",
+    website: "https://www.legolanddiscoverycentre.com/hong-kong/", tips: "樂高迷必去",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "10:00-19:00", address: "尖沙咀 K11 MUSEA B1層"
+  },
+  {
+    id: "007", name: "Playdot", district: "銅鑼灣", region: "hk-island",
+    lat: 22.2795, lng: 114.1830, category: "playhouse", indoor: true,
+    ageRange: [0, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "自然靈感環保遊樂空間，設有感官區、攀爬",
+    website: "https://www.leegardens.com.hk/", tips: "環保主題",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "銅鑼灣 Lee Garden Two 18樓"
+  },
+  {
+    id: "008", name: "Wise-Kids", district: "中環/銅鑼灣", region: "hk-island",
+    lat: 22.2830, lng: 114.1550, category: "playhouse", indoor: true,
+    ageRange: [0, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "明亮遊樂室，設有輪換木製玩具、創意角落",
+    website: "https://www.wisekidsplayroom.com/", tips: "注重創意發展",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "中環/銅鑼灣"
+  },
+  {
+    id: "009", name: "EpicLand", district: "啟德/愉景灣", region: "kowloon",
+    lat: 22.3305, lng: 114.2030, category: "playhouse", indoor: true,
+    ageRange: [2, 12], priceType: "high", priceDescription: "$200-400",
+    description: "冒險主題公園，設有巨型滑梯、障礙課程",
+    website: "https://www.epiclandhk.com/", tips: "場地很大",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "啟德體育園/愉景灣"
+  },
+  {
+    id: "010", name: "Momoland", district: "多分店", region: "kowloon",
+    lat: 22.3145, lng: 114.1670, category: "playhouse", indoor: true,
+    ageRange: [2, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "主題遊樂屋，設有忍者迷宮、角色扮演區",
+    website: "https://momoland.com.hk/", tips: "角色扮演為主",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "荃灣/坑口/北角/將軍澳"
+  },
+  // 香港科學館系列
+  {
+    id: "011", name: "香港科學館", district: "尖沙咀", region: "kowloon",
+    lat: 22.3015, lng: 114.1790, category: "museum", indoor: true,
+    ageRange: [3, 12], priceType: "free", priceDescription: "免費",
+    description: "互動式科學展覽，小朋友可以動手體驗科學原理",
+    website: "https://hk.science.museum", tips: "建議平日去，周三休館",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "10:00-19:00（周三休）", address: "尖沙咀科學館道2號", phone: "2732 3232"
+  },
+  {
+    id: "012", name: "香港太空館", district: "尖沙咀", region: "kowloon",
+    lat: 22.2956, lng: 114.1723, category: "museum", indoor: true,
+    ageRange: [4, 12], priceType: "low", priceDescription: "$10-32",
+    description: "蛋形建築，天象廳播放星空節目，宇宙展覽",
+    website: "https://hk.space.museum", tips: "天象廳要預先買票",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "13:00-21:00（周二休）", address: "尖沙咀梳士巴利道10號", phone: "2721 0226"
+  },
+  {
+    id: "013", name: "香港動植物公園", district: "中環", region: "hk-island",
+    lat: 22.2783, lng: 114.1555, category: "park", indoor: false,
+    ageRange: [0, 12], priceType: "free", priceDescription: "免費",
+    description: "中環綠洲，有紅鸛、狐猴，大草坪適合奔跑",
+    website: "https://www.lcsd.gov.hk", tips: "推嬰兒車要小心斜路",
+    hasBabyRoom: true, hasStrollerAccess: false, hasRestaurant: true, rainyDaySuitable: false,
+    openingHours: "05:00-22:00", address: "中環雅賓利道", phone: "2530 0154"
+  },
+  {
+    id: "014", name: "The Big Things", district: "荃灣", region: "nt",
+    lat: 22.3756, lng: 114.1094, category: "playhouse", indoor: true,
+    ageRange: [1, 6], priceType: "medium", priceDescription: "$160起",
+    description: "自然主題叢林公園，木粒沙池、繩網",
+    website: "https://www.thebigthings.com", tips: "記得帶襪",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "10:00-18:00", address: "荃灣南豐紗廠", phone: "3619 0633"
+  },
+  {
+    id: "015", name: "香港濕地公園", district: "天水圍", region: "nt",
+    lat: 22.4667, lng: 114.0083, category: "park", indoor: true,
+    ageRange: [3, 12], priceType: "low", priceDescription: "$15-30（周三免費）",
+    description: "濕地生態展覽，觀鳥屋、紅樹林步道",
+    website: "https://www.wetlandpark.gov.hk", tips: "帶望遠鏡觀鳥",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "10:00-17:00（周一休）", address: "天水圍濕地公園路", phone: "3152 2666"
+  },
+  {
+    id: "016", name: "JOYPOLIS SPORTS", district: "啟德", region: "kowloon",
+    lat: 22.3260, lng: 114.1980, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "high", priceDescription: "$200-400",
+    description: "運動娛樂綜合體，忍者課程、VR運動",
+    website: "https://hk-joypolis-sports.com", tips: "啟德體育園最新設施",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "啟德體育園健康中心"
+  },
+  {
+    id: "017", name: "KidZania", district: "大嶼山", region: "nt",
+    lat: 22.3160, lng: 113.9360, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "high", priceDescription: "$200-400",
+    description: "迷你城市，角色扮演職業體驗",
+    website: "https://www.kidzania.com.hk", tips: "11 SKIES 商場內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "航天城東路8號 11 SKIES"
+  },
+  {
+    id: "018", name: "Nobi Nobi", district: "將軍澳", region: "nt",
+    lat: 22.3070, lng: 114.2600, category: "playhouse", indoor: true,
+    ageRange: [0, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "大型室內遊樂場，設有幻燈城堡、繩網",
+    website: "https://www.nobinobihk.com", tips: "將軍澳中心商場",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "10:00-21:00", address: "將軍澳唐德街9號"
+  },
+  {
+    id: "019", name: "Snoopy World", district: "沙田", region: "nt",
+    lat: 22.3825, lng: 114.1880, category: "park", indoor: false,
+    ageRange: [0, 12], priceType: "free", priceDescription: "免費",
+    description: "史努比主題公園，6個遊樂區",
+    website: "https://www.shatin.mk", tips: "新城市廣場3樓平台",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: false,
+    openingHours: "11:00-19:00", address: "沙田正街18號新城市廣場"
+  },
+  {
+    id: "020", name: "青衣公園", district: "青衣", region: "nt",
+    lat: 22.3540, lng: 114.1020, category: "park", indoor: false,
+    ageRange: [0, 12], priceType: "free", priceDescription: "免費",
+    description: "大型公園，有恐龍主題遊樂場、腳船",
+    website: "https://www.lcsd.gov.hk", tips: "恐龍設施很吸引",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: false,
+    openingHours: "24小時", address: "青衣青綠街"
+  },
+{
+    id: "021", name: "慧泊雅 (Whisky)", district: "中環", region: "hk-island",
+    lat: 22.2850, lng: 114.1520, category: "playhouse", indoor: true,
+    ageRange: [2, 3], priceType: "medium", priceDescription: "$100-200",
+    description: "澳洲主題遊樂室，設有動物火車、超市、球池及釣魚遊戲",
+    website: "https://playroo.com.hk/", tips: "適合幼兒",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "北角 King's Road 147-151號 1樓"
+  },
+{
+    id: "022", name: "多科多科 (DOCODOCO)", district: "將軍澳", region: "nt",
+    lat: 22.3130, lng: 114.2640, category: "playhouse", indoor: true,
+    ageRange: [0, 12], priceType: "high", priceDescription: "$200-400",
+    description: "VR 遊樂場，設有感官沙灘、瀑布滑梯及互動荷花池",
+    website: "https://www.namco.com.hk/docodoco", tips: "科技感強",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "將軍澳 The LOHAS 4樓"
+  },
+{
+    id: "023", name: "蚊叮叮 (Moskiddo)", district: "黃竹坑", region: "hk-island",
+    lat: 22.2485, lng: 114.1555, category: "playhouse", indoor: true,
+    ageRange: [2, 12], priceType: "high", priceDescription: "$200-400",
+    description: "大型遊樂場，設有無限遊樂區、監督及小食角",
+    website: "https://www.moskiddo.com/", tips: "場地大",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "黃竹坑 One Island South 13樓"
+  },
+{
+    id: "024", name: "奇想 (WHIMSY)", district: "灣仔", region: "hk-island",
+    lat: 22.2770, lng: 114.1730, category: "playhouse", indoor: true,
+    ageRange: [0, 12], priceType: "high", priceDescription: "$200-400",
+    description: "遊樂空間，設有 VR 乘騎、碰碰車、雪地仙境及街機",
+    website: "https://www.ysmihw.com.hk/", tips: "適合大童",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "灣仔 Hopewell Centre 1403-1405室"
+  },
+{
+    id: "025", name: "奇奇遊樂場 (Kids Kids)", district: "九龍灣", region: "kowloon",
+    lat: 22.3230, lng: 114.2080, category: "playhouse", indoor: true,
+    ageRange: [1, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "沉浸式遊樂場，設有 20+ 區如 AR 投影、修車及電動乘騎",
+    website: "https://www.megabox.com.hk/", tips: "MegaBox內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "九龍灣 MegaBox"
+  },
+{
+    id: "026", name: "蟲城 (Verm City)", district: "鰂魚涌", region: "hk-island",
+    lat: 22.2876, lng: 114.2120, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "室內攀岩健身房，設有抱石牆及 Clip-n-Climb",
+    website: "https://www.vermcity.com/", tips: "運動量大",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "鰂魚涌 Kodak House 1, 4樓"
+  },
+{
+    id: "027", name: "遊樂屋 (The Playhouse)", district: "數碼港", region: "hk-island",
+    lat: 22.2510, lng: 114.1480, category: "playhouse", indoor: true,
+    ageRange: [1, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "基於遊樂的學習空間，設有藝術工作坊及實踐活動",
+    website: "https://www.pplayhouse.com/", tips: "教育導向",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "數碼港 The Arcade 301A"
+  },
+{
+    id: "028", name: "派對貓遊樂屋 (Party Cat)", district: "堅尼地城", region: "hk-island",
+    lat: 22.2810, lng: 114.1270, category: "playhouse", indoor: true,
+    ageRange: [1, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "恐龍主題遊樂場，設有挖掘機、球池、沙坑及街機",
+    website: "https://partycat.fun/", tips: "恐龍迷必去",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "堅尼地城 Cheung Fat Industrial Building"
+  },
+{
+    id: "029", name: "沙盒 VR (Sandbox VR)", district: "銅鑼灣/尖沙咀", region: "hk-island",
+    lat: 22.2810, lng: 114.1830, category: "playhouse", indoor: true,
+    ageRange: [6, 12], priceType: "high", priceDescription: "$200-400",
+    description: "沉浸式 VR 世界，適合團體冒險如殭屍戰或海盜任務",
+    website: "https://sandboxvr.com/", tips: "適合大童及青少年",
+    hasBabyRoom: false, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "銅鑼灣 Soundwill Plaza II 23樓"
+  },
+{
+    id: "030", name: "樹先生 (Mr Tree)", district: "荔枝角/銅鑼灣", region: "kowloon",
+    lat: 22.3370, lng: 114.1480, category: "playhouse", indoor: true,
+    ageRange: [0, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "遊樂室配自助餐廳，設有滑梯、球池及繩橋",
+    website: "https://www.facebook.com/Mr.Tree38HK/", tips: "有自助餐",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "荔枝角 D2 Place Two 1-2樓"
+  },
+{
+    id: "031", name: "城市畫廊 (City Gallery)", district: "中環", region: "hk-island",
+    lat: 22.2830, lng: 114.1610, category: "museum", indoor: true,
+    ageRange: [2, 6], priceType: "free", priceDescription: "免費",
+    description: "免費教育遊樂室，設有互動城市設計展覽及 SimCity 遊戲",
+    website: "https://www.citygallery.gov.hk/", tips: "免費入場",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "中環 Edinburgh Place 3號 1樓"
+  },
+{
+    id: "032", name: "小怪物 (Little Monster)", district: "柴灣", region: "hk-island",
+    lat: 22.2640, lng: 114.2360, category: "playhouse", indoor: true,
+    ageRange: [2, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "遊樂公園，設有波浪滑梯、攀爬、超市角色扮演及火車",
+    website: "https://www.facebook.com/profile.php?id=100090297034671", tips: "角色扮演",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "柴灣 Eltee Building, Ning Foo St 3號"
+  },
+{
+    id: "033", name: "鯊魚及海盜冒險區", district: "屯門", region: "nt",
+    lat: 22.3860, lng: 113.9810, category: "playhouse", indoor: true,
+    ageRange: [1, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "軟墊遊樂室，設有海盜主題，適合酒店客人及訪客",
+    website: "https://www.goldcoasthotel.com.hk/", tips: "黃金海岸酒店內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "屯門黃金海岸 1 Castle Peak Road"
+  },
+{
+    id: "034", name: "叢林兒童冒險 (Jungle Kidventure)", district: "九龍灣", region: "kowloon",
+    lat: 22.3230, lng: 114.2080, category: "playhouse", indoor: true,
+    ageRange: [2, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "叢林主題遊樂屋，設有彈跳城堡、沙坑及電動車",
+    website: "https://www.facebook.com/jungle-kidventure", tips: "叢林主題",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "九龍灣 Megabox 9樓"
+  },
+{
+    id: "035", name: "奇妙谷 (Wonder Valley)", district: "深水埗", region: "kowloon",
+    lat: 22.3370, lng: 114.1480, category: "playhouse", indoor: true,
+    ageRange: [2, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "奇幻遊樂場，設有童話區、海盜船、軟墊遊樂及球池",
+    website: "https://www.facebook.com/wondervalley.hk", tips: "童話主題",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "深水埗 Cheung Sha Wan Plaza 3樓 312-317"
+  },
+{
+    id: "036", name: "E3 俱樂部 (E3 Club)", district: "九龍灣", region: "kowloon",
+    lat: 22.3230, lng: 114.2080, category: "playhouse", indoor: true,
+    ageRange: [0, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "娛樂焦點遊樂場，設有蹦床、球池及巨型滑梯",
+    website: "https://www.e3club.com.hk/", tips: "MegaBox內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "九龍灣 MegaBox 12樓"
+  },
+{
+    id: "037", name: "摺紙咖啡廳 (Origami Cafe)", district: "九龍灣", region: "kowloon",
+    lat: 22.3070, lng: 114.2130, category: "restaurant", indoor: true,
+    ageRange: [0, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "咖啡廳配教育遊樂區、玩具及工作坊，提供融合菜餚",
+    website: "https://www.facebook.com/origamikidscafe", tips: "親子餐廳",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "啟德郵輪碼頭頂層"
+  },
+{
+    id: "038", name: "兒童樂園遊樂公園 (Kiddoland)", district: "紅磡", region: "kowloon",
+    lat: 22.3050, lng: 114.1880, category: "playhouse", indoor: true,
+    ageRange: [2, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "緊湊遊樂場，設有蹦床、球池、滑梯及軟玩具",
+    website: "https://www.facebook.com/kiddolandplaypark", tips: "紅磡工廈區",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "紅磡 Hang Fung Industrial Building"
+  },
+{
+    id: "039", name: "奔跑兒童遊樂屋 (Runningkids)", district: "紅磡", region: "kowloon",
+    lat: 22.3050, lng: 114.1880, category: "playhouse", indoor: true,
+    ageRange: [1, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "中心設有球池、滑梯、蹦床、沙區及賽道",
+    website: "https://www.facebook.com/Runningkidsplayhouse", tips: "紅磡區",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "紅磡 Fortune Metropolis"
+  },
+{
+    id: "040", name: "兒童樂園 (KidZania)", district: "大嶼山", region: "nt",
+    lat: 22.3160, lng: 113.9360, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "high", priceDescription: "$200-400",
+    description: "迷你城市，適合角色扮演職業如科技、零售等",
+    website: "https://www.kidzania.com.hk/", tips: "11 SKIES內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "大嶼山 11 SKIES, 8 Sky City Road East"
+  },
+{
+    id: "041", name: "三角加 (Triangle Plus)", district: "荃灣", region: "nt",
+    lat: 22.3730, lng: 114.1150, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "high", priceDescription: "$200-400",
+    description: "冒險攀爬公園，設有牆壁、障礙、球池及洞穴",
+    website: "https://www.triangleplushk.com", tips: "Plaza 88內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "荃灣 Plaza 88"
+  },
+{
+    id: "042", name: "兒童科技 (Kidztech)", district: "紅磡", region: "kowloon",
+    lat: 22.3050, lng: 114.1880, category: "playhouse", indoor: true,
+    ageRange: [2, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "寬敞遊樂室，設有感官遊樂、沙坑、真空球池及木玩具",
+    website: "https://www.facebook.com/kidztechhk", tips: "紅磡區",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "紅磡 Harbourfront Landmark Office Level 6樓"
+  },
+{
+    id: "043", name: "探索者 (The Explorers)", district: "鴨脷洲", region: "hk-island",
+    lat: 22.2400, lng: 114.1550, category: "playhouse", indoor: true,
+    ageRange: [0, 6], priceType: "high", priceDescription: "$200-400",
+    description: "軟墊遊樂區，設有日票及泳池通行",
+    website: "https://www.fullertonhotels.com", tips: "Fullerton Ocean Park酒店內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: true, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "鴨脷洲 Ocean Drive 3號"
+  },
+{
+    id: "044", name: "真專家遊樂趣區 (Real Expert)", district: "上環", region: "hk-island",
+    lat: 22.2870, lng: 114.1500, category: "playhouse", indoor: true,
+    ageRange: [2, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "遊樂場，設有滑梯、隧道、街機、沙坑及迷你廚房",
+    website: "https://www.facebook.com/RealExpertPlayFunZone", tips: "上環區",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "上環 Infinitus Plaza 2樓"
+  },
+{
+    id: "045", name: "AME 體育館 (AME Stadium)", district: "尖沙咀", region: "kowloon",
+    lat: 22.2980, lng: 114.1720, category: "playhouse", indoor: true,
+    ageRange: [12], priceType: "high", priceDescription: "$200-400",
+    description: "電子競技及遊戲場地，設有互動裝置",
+    website: "https://www.ame.gg", tips: "適合青少年",
+    hasBabyRoom: false, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "尖沙咀"
+  },
+{
+    id: "046", name: "100Fun 樂富", district: "黃大仙", region: "kowloon",
+    lat: 22.3400, lng: 114.1870, category: "playhouse", indoor: true,
+    ageRange: [2, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "一般室內遊樂室，適合休閒活動",
+    website: "https://www.100fun.com.hk/", tips: "樂富區",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "黃大仙樂富"
+  },
+{
+    id: "047", name: "兒童 Fi 派對室 (Kids Fi)", district: "葵涌", region: "nt",
+    lat: 22.3630, lng: 114.1310, category: "playhouse", indoor: true,
+    ageRange: [2, 12], priceType: "medium", priceDescription: "$100-200",
+    description: "派對導向遊樂場",
+    website: "https://www.kidsfi.com.hk/", tips: "葵涌區",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "葵涌"
+  },
+{
+    id: "048", name: "快樂時光遊樂屋 (Happy Hours)", district: "深水埗", region: "kowloon",
+    lat: 22.3370, lng: 114.1480, category: "playhouse", indoor: true,
+    ageRange: [2, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "軟墊遊樂，設有迷你車及墊區",
+    website: "https://www.happyhoursplayhouse.com/", tips: "荔枝角區",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "荔枝角"
+  },
+{
+    id: "049", name: "甜圈遊樂屋 (Donut Playhouse)", district: "尖沙咀", region: "kowloon",
+    lat: 22.2940, lng: 114.1750, category: "playhouse", indoor: true,
+    ageRange: [2, 6], priceType: "medium", priceDescription: "$100-200",
+    description: "遊樂區，設有巨型滑梯及軟區",
+    website: "https://www.k11.com/musea/", tips: "K11 MUSEA內",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "尖沙咀 K11 MUSEA"
+  },
+{
+    id: "050", name: "石塘咀體育中心", district: "中西區", region: "hk-island",
+    lat: 22.2860, lng: 114.1360, category: "playhouse", indoor: true,
+    ageRange: [3, 12], priceType: "free", priceDescription: "免費",
+    description: "免費政府遊樂場，設有天空主題攀爬及滑梯",
+    website: "https://www.lcsd.gov.hk/", tips: "康文署設施，免費",
+    hasBabyRoom: true, hasStrollerAccess: true, hasRestaurant: false, rainyDaySuitable: true,
+    openingHours: "請查詢官網", address: "石塘咀 Municipal Services Building"
+  },
+  // 繼續添加至50個...
+];
+
+        const categoryLabels = {
+            museum: '博物館',
+            park: '公園',
+            playhouse: '遊樂場',
+            restaurant: '餐廳',
+            library: '圖書館'
+        };
+
+        const regionLabels = {
+            'hk-island': '港島',
+            'kowloon': '九龍',
+            'nt': '新界'
+        };
+
+        const priceLabels = {
+            free: '免費',
+            low: '低消費',
+            medium: '中消費',
+            high: '高消費'
+        };
+
+        // Initialize Leaflet map
+        const map = L.map('map').setView([22.32, 114.17], 11);
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Filter state
+        let markers = [];
+
+        // Favorites state
+        let favorites = JSON.parse(localStorage.getItem('parentMapFavorites') || '[]');
+        let showFavoritesOnly = false;
+
+        // Update favorites count and button style
+        function updateFavoritesUI() {
+            const favCount = favorites.length;
+            document.getElementById('favCount').textContent = favCount;
+            const favBtn = document.getElementById('favoritesFilter');
+            
+            if (favCount > 0) {
+                // 有收藏：變成紅色可用狀態
+                favBtn.classList.remove('bg-gray-100', 'text-gray-400', 'border-gray-200');
+                favBtn.classList.add('bg-red-50', 'text-red-600', 'border-red-200', 'hover:bg-red-100');
+                favBtn.disabled = false;
+            } else {
+                // 無收藏：greyed out
+                favBtn.classList.remove('bg-red-50', 'text-red-600', 'border-red-200', 'hover:bg-red-100');
+                favBtn.classList.add('bg-gray-100', 'text-gray-400', 'border-gray-200');
+                favBtn.disabled = true;
+                showFavoritesOnly = false;
+            }
+        }
+
+        // Toggle favorite
+        function toggleFavorite(locationId) {
+            const index = favorites.indexOf(locationId);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(locationId);
+            }
+            localStorage.setItem('parentMapFavorites', JSON.stringify(favorites));
+            updateFavoritesUI();
+            renderLocations();
+        }
+
+        // Check if location is favorite
+        function isFavorite(locationId) {
+            return favorites.includes(locationId);
+        }
+
+        // User location storage
+        let userLocation = null;
+
+        // Haversine formula to calculate distance
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lng2 - lng1) * Math.PI / 180;
+            
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c; // Distance in meters
+        }
+
+        // 檢查開放日是否匹配
+        function checkOpenDay(openingHours, selectedDay) {
+            if (selectedDay === 'all') return true;
+            if (!openingHours) return true;
+            
+            const hours = openingHours.toLowerCase();
+            const dayMap = {
+                'mon': ['周一', '星期一', 'mon'],
+                'tue': ['周二', '星期二', 'tue'],
+                'wed': ['周三', '星期三', 'wed'],
+                'thu': ['周四', '星期四', 'thu'],
+                'fri': ['周五', '星期五', 'fri'],
+                'sat': ['周六', '星期六', 'sat'],
+                'sun': ['周日', '星期日', 'sun']
+            };
+            
+            const dayNames = dayMap[selectedDay];
+            
+            // 檢查是否包含休息日標記
+            for (const name of dayNames) {
+                if (hours.includes(name + '休') || hours.includes(name + '休息')) {
+                    return false; // 呢日休息
+                }
+            }
+            
+            // 如果寫明「全日」或「每天」，表示開放
+            if (hours.includes('全日') || hours.includes('每天') || hours.includes('24小時')) {
+                return true;
+            }
+            
+            // 默認開放（如果無特別標記休息）
+            return true;
+        }
+
+        // 獲取價格數值（用於排序）
+        function getPriceValue(priceType) {
+            const priceValues = {
+                'free': 0,
+                'low': 1,
+                'medium': 2,
+                'high': 3
+            };
+            return priceValues[priceType] || 2;
+        }
+
+        // 獲取價格符號（$ / $$ / $$$）
+        function getPriceSymbol(priceType) {
+            const symbols = {
+                'free': '🆓 免費',
+                'low': '$',
+                'medium': '$$',
+                'high': '$$$'
+            };
+            return symbols[priceType] || '$$';
+        }
+
+        // 格式化日期顯示
+        function formatLastUpdated(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            const now = new Date();
+            const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 0) return '今日更新';
+            if (diffDays === 1) return '昨日更新';
+            if (diffDays < 7) return `${diffDays}日前更新`;
+            if (diffDays < 30) return `${Math.floor(diffDays / 7)}星期前更新`;
+            return `${d.getMonth() + 1}月${d.getDate()}日更新`;
+        }
+
+        // 檢查開放時間是否匹配
+        function checkOpenTime(openingHours, selectedTime) {
+            if (selectedTime === 'all') return true;
+            if (!openingHours) return true;
+            
+            const hours = openingHours.toLowerCase();
+            
+            // 提取時間範圍（簡化處理）
+            const timeMatch = hours.match(/(\d{1,2}):?(\d{2})?\s*[\-–~]\s*(\d{1,2}):?(\d{2})?/);
+            if (!timeMatch) return true; // 無法解析，默認開放
+            
+            const openHour = parseInt(timeMatch[1]);
+            const closeHour = parseInt(timeMatch[3]);
+            
+            // 時間段定義
+            const timeRanges = {
+                'morning': { start: 8, end: 12 },    // 08:00-12:00
+                'afternoon': { start: 12, end: 18 }, // 12:00-18:00
+                'evening': { start: 18, end: 22 }    // 18:00-22:00
+            };
+            
+            const selectedRange = timeRanges[selectedTime];
+            if (!selectedRange) return true;
+            
+            // 檢查是否有重疊
+            return (openHour < selectedRange.end && closeHour > selectedRange.start);
+        }
+
+        function renderLocations() {
+            const region = document.getElementById('regionFilter').value;
+            const category = document.getElementById('categoryFilter').value;
+            const age = document.getElementById('ageFilter').value;
+            const price = document.getElementById('priceFilter').value;
+            const indoor = document.getElementById('indoorFilter').value;
+            const distance = document.getElementById('distanceFilter').value;
+            const day = document.getElementById('dayFilter').value;
+            const time = document.getElementById('timeFilter').value;
+
+            let filtered = locations.filter(l => {
+                // 地區篩選（十八區）
+                if (region !== 'all' && !l.district.includes(region)) return false;
+                
+                // 類別篩選
+                if (category !== 'all' && l.category !== category) return false;
+                
+                // 年齡篩選（0-1, 1-2, 2-3, 3-6, 6-12, 12+）
+                if (age !== 'all') {
+                    const [minAge, maxAge] = age.split('-').map(a => a === '12+' ? 12 : parseInt(a));
+                    if (maxAge) {
+                        // 範圍檢查（例如 3-6）
+                        if (l.ageRange[1] < minAge || l.ageRange[0] > maxAge) return false;
+                    } else {
+                        // 12+ 檢查
+                        if (l.ageRange[1] < 12) return false;
+                    }
+                }
+                
+                // 消費篩選
+                if (price !== 'all') {
+                    const priceMap = {
+                        '0-100': ['free', 'low'],
+                        '100-200': ['medium'],
+                        '200-400': ['high'],
+                        '400+': ['high']
+                    };
+                    if (!priceMap[price].includes(l.priceType)) return false;
+                }
+                
+                // 室內/室外篩選
+                if (indoor === 'indoor' && !l.indoor) return false;
+                if (indoor === 'outdoor' && l.indoor) return false;
+                
+                // 我的收藏篩選
+                if (showFavoritesOnly && !favorites.includes(l.id)) return false;
+                
+                // 開放日篩選
+                if (day !== 'all' && !checkOpenDay(l.openingHours, day)) return false;
+                
+                // 開放時間篩選
+                if (time !== 'all' && !checkOpenTime(l.openingHours, time)) return false;
+                
+                return true;
+            });
+            
+            // 距離篩選（需要用戶已定位）
+            if (distance !== 'all') {
+                if (!userLocation) {
+                    // 提示用戶需要先定位
+                    alert('📍 請先點擊「定位我」按鈕，再使用距離篩選功能');
+                    document.getElementById('distanceFilter').value = 'all';
+                } else {
+                    const maxDistance = parseInt(distance);
+                    filtered = filtered.filter(l => {
+                        const dist = calculateDistance(
+                            userLocation.lat, userLocation.lng,
+                            l.lat, l.lng
+                        );
+                        return dist <= maxDistance;
+                    });
+                }
+            }
+
+            // 🎯 排序功能
+            const sortValue = document.getElementById('sortFilter').value;
+            switch(sortValue) {
+                case 'updated':
+                    // 最近更新（假設有 updatedAt 欄位，冇就用 id 倒序）
+                    filtered.sort((a, b) => (b.updatedAt || b.id) - (a.updatedAt || a.id));
+                    break;
+                case 'price-asc':
+                    filtered.sort((a, b) => getPriceValue(a.priceType) - getPriceValue(b.priceType));
+                    break;
+                case 'price-desc':
+                    filtered.sort((a, b) => getPriceValue(b.priceType) - getPriceValue(a.priceType));
+                    break;
+                default:
+                    // 距離最近：有定位就按距離排序
+                    if (userLocation) {
+                        filtered.sort((a, b) => {
+                            const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
+                            const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
+                            return distA - distB;
+                        });
+                    }
+                    break;
+            }
+
+            // Update list
+            const listEl = document.getElementById('locationList');
+            const countEl = document.getElementById('resultCount');
+            
+            // 🎯 顯示結果數量（更友好嘅文案）
+            let countText = '';
+            const indoorText = indoor === 'indoor' ? '室內' : '';
+            const ageText = age !== 'all' ? document.getElementById('ageFilter').options[document.getElementById('ageFilter').selectedIndex].text.replace('歲', '') : '';
+            
+            if (showFavoritesOnly) {
+                countText = `❤️ 我的收藏: ${filtered.length} 個地點`;
+            } else if (filtered.length === 0) {
+                countText = `😅 暫時找不到符合條件的地點，試下放寬篩選？`;
+            } else if (userLocation && distance !== 'all') {
+                const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
+                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText}${ageText}放電好去處（${distanceText}內）`;
+            } else if (sortValue === 'updated') {
+                countText = `📅 最近更新: 共 ${filtered.length} 個地點`;
+            } else if (day !== 'all' || time !== 'all') {
+                const dayNames = { 'mon': '周一', 'tue': '周二', 'wed': '周三', 'thu': '周四', 'fri': '周五', 'sat': '周六', 'sun': '周日' };
+                const timeNames = { 'morning': '早上', 'afternoon': '下午', 'evening': '晚上' };
+                const dayText = day !== 'all' ? dayNames[day] : '';
+                const timeText = time !== 'all' ? timeNames[time] : '';
+                countText = `🕐 ${dayText}${timeText}開放: ${filtered.length} 個地點`;
+            } else {
+                // 🎯 Phase 1: 預設文案
+                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText || '室內'}${ageText || '3-6歲'}放電好去處`;
+            }
+            countEl.textContent = countText;
+            countEl.className = 'text-sm text-gray-600 font-medium';
+            
+            // Category icons and colors
+            const categoryIcons = {
+                museum: { icon: '🏛️', bg: 'from-amber-400 to-orange-500' },
+                park: { icon: '🌳', bg: 'from-green-400 to-emerald-500' },
+                playhouse: { icon: '🎪', bg: 'from-blue-400 to-indigo-500' },
+                restaurant: { icon: '🍽️', bg: 'from-rose-400 to-pink-500' },
+                library: { icon: '📚', bg: 'from-violet-400 to-purple-500' }
+            };
+            
+            listEl.innerHTML = filtered.map(l => {
+                // 計算距離（如果用戶已定位，一律顯示）
+                let distanceHtml = '';
+                if (userLocation) {
+                    const dist = calculateDistance(userLocation.lat, userLocation.lng, l.lat, l.lng);
+                    const distText = dist >= 1000 ? `${(dist/1000).toFixed(1)}公里` : `${Math.round(dist)}米`;
+                    distanceHtml = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">📏 ${distText}</span>`;
+                }
+                
+                const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
+                
+                return `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="h-40 bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative">
+                        <span class="text-white text-5xl drop-shadow-lg">${catStyle.icon}</span>
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                            <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex flex-wrap gap-1">
+                                <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    ${categoryLabels[l.category]}
+                                </span>
+                                ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
+                                ${distanceHtml}
+                            </div>
+                            <button onclick="toggleFavorite('${l.id}')" class="text-2xl hover:scale-110 transition-transform" title="${isFavorite(l.id) ? '取消收藏' : '加入收藏'}">
+                                ${isFavorite(l.id) ? '❤️' : '🤍'}
+                            </button>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
+                        ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
+                        
+                        <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
+                            <span>📍</span>
+                            <span>${regionLabels[l.region]} · ${l.district}</span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : ''}
+                            ${l.rainyDaySuitable ? '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">☂️雨天適合</span>' : ''}
+                            ${l.hasBabyRoom ? '<span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">👶哺乳室</span>' : ''}
+                            ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
+                        </div>
+
+                        <!-- 🎯 信任元素：年齡 + 價格 + 更新日期 -->
+                        <div class="flex items-center gap-2 mb-2 flex-wrap">
+                            <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">${l.ageRange[0]}-${l.ageRange[1]}歲</span>
+                            <span class="text-xs font-medium ${l.priceType === 'free' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded">${getPriceSymbol(l.priceType)}</span>
+                            ${l.updatedAt ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">🕐 ${formatLastUpdated(l.updatedAt)}</span>` : '<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">🕐 2026年2月更新</span>'}
+                        </div>
+
+                        <!-- 🎯 80字摘要 -->
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description.substring(0, 80)}${l.description.length > 80 ? '...' : ''}</p>
+
+                        <!-- 🎯 開放時間（簡化顯示） -->
+                        <div class="flex items-start gap-2 text-xs text-gray-500 mb-3">
+                            <span>🕐</span>
+                            <span class="line-clamp-1">${l.openingHours.split('\\n')[0]}</span>
+                        </div>
+
+                        <div class="flex gap-2 pt-3 border-t">
+                            ${l.phone ? `<a href="tel:${l.phone}" class="flex-1 py-2 text-sm text-gray-700 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors">📞 電話</a>` : ''}
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-green-700 bg-green-50 rounded text-center hover:bg-green-100 transition-colors">🗺️ 路線</a>
+                            ${l.website ? `<a href="${l.website}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">🌐 網站</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+
+            // Update map markers
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            filtered.forEach(l => {
+                const marker = L.marker([l.lat, l.lng])
+                    .addTo(map)
+                    .bindPopup(`
+                        <div style="font-family: 'Noto Sans TC', sans-serif;">
+                            <b style="font-size: 14px;">${l.name}</b><br>
+                            <span style="color: #666; font-size: 12px;">${categoryLabels[l.category]}</span><br>
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" 
+                               target="_blank" 
+                               style="display: inline-block; margin-top: 8px; padding: 6px 12px; background: #22c55e; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">
+                               🗺️ 取得路線
+                            </a>
+                        </div>
+                    `);
+                markers.push(marker);
+            });
+
+            // Fit map to markers
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers);
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+
+        // Event listeners
+        document.getElementById('regionFilter').addEventListener('change', renderLocations);
+        document.getElementById('categoryFilter').addEventListener('change', renderLocations);
+        document.getElementById('ageFilter').addEventListener('change', renderLocations);
+        document.getElementById('priceFilter').addEventListener('change', renderLocations);
+        document.getElementById('indoorFilter').addEventListener('change', renderLocations);
+        document.getElementById('distanceFilter').addEventListener('change', renderLocations);
+        
+        // 搜尋功能
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        
+        function handleSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            if (!query) {
+                renderLocations();
+                return;
+            }
+            
+            const filtered = locations.filter(l => 
+                l.name.toLowerCase().includes(query) ||
+                l.district.toLowerCase().includes(query) ||
+                l.description.toLowerCase().includes(query) ||
+                l.category.toLowerCase().includes(query)
+            );
+            
+            // 更新列表
+            const listEl = document.getElementById('locationList');
+            const countEl = document.getElementById('resultCount');
+            countEl.textContent = `🔍 搜尋「${query}」找到 ${filtered.length} 個地點`;
+            
+            // 渲染搜尋結果
+            renderSearchResults(filtered);
+        }
+        
+        searchBtn.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSearch();
+        });
+        
+        // 快速篩選
+        document.querySelectorAll('.quick-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                if (filter === 'indoor') {
+                    document.getElementById('indoorFilter').value = 'indoor';
+                } else if (filter === 'free') {
+                    document.getElementById('priceFilter').value = '0-100';
+                } else {
+                    document.getElementById('categoryFilter').value = filter;
+                }
+                renderLocations();
+                // Scroll to results
+                document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        
+        // 渲染搜尋結果（復用 renderLocations 嘅邏輯）
+        function renderSearchResults(searchResults) {
+            const listEl = document.getElementById('locationList');
+            
+            if (searchResults.length === 0) {
+                listEl.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-gray-500">
+                        <span class="text-4xl block mb-4">🔍</span>
+                        <p>找不到符合條件的地點</p>
+                        <p class="text-sm mt-2">試試其他關鍵字</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 使用相同嘅渲染邏輯
+            const categoryIcons = {
+                museum: { icon: '🏛️', bg: 'from-amber-400 to-orange-500' },
+                park: { icon: '🌳', bg: 'from-green-400 to-emerald-500' },
+                playhouse: { icon: '🎪', bg: 'from-blue-400 to-indigo-500' },
+                restaurant: { icon: '🍽️', bg: 'from-rose-400 to-pink-500' },
+                library: { icon: '📚', bg: 'from-violet-400 to-purple-500' }
+            };
+            
+            listEl.innerHTML = searchResults.map(l => {
+                const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
+                
+                return `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="h-40 bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative">
+                        <span class="text-white text-5xl drop-shadow-lg">${catStyle.icon}</span>
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                            <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                            ${categoryLabels[l.category]}
+                        </span>
+                        ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded ml-1">⚠️ 未驗證</span>' : ''}
+                        <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
+                        ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
+                        
+                        <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
+                            <span>📍</span>
+                            <span>${regionLabels[l.region]} · ${l.district}</span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : ''}
+                            ${l.rainyDaySuitable ? '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">☂️雨天適合</span>' : ''}
+                            ${l.hasBabyRoom ? '<span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">👶哺乳室</span>' : ''}
+                            ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm mb-3">
+                            <span class="text-gray-600">適合：${l.ageRange[0]}-${l.ageRange[1]}歲</span>
+                            <span class="font-medium ${l.priceType === 'free' ? 'text-green-600' : 'text-gray-700'}">${priceLabels[l.priceType]}</span>
+                        </div>
+
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description}</p>
+
+                        <div class="flex gap-2 pt-3 border-t">
+                            ${l.phone ? `<a href="tel:${l.phone}" class="flex-1 py-2 text-sm text-gray-700 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors">📞 電話</a>` : ''}
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-green-700 bg-green-50 rounded text-center hover:bg-green-100 transition-colors">🗺️ 路線</a>
+                            ${l.website ? `<a href="${l.website}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">🌐 網站</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
+
+        // User location marker
+        let userMarker = null;
+        let userCircle = null;
+
+        // Geolocation function
+        function locateUser() {
+            const btn = document.getElementById('locateBtn');
+            btn.textContent = '📍 定位中...';
+            
+            if (!navigator.geolocation) {
+                alert('你的瀏覽器不支援定位功能');
+                btn.textContent = '📍 定位我';
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const accuracy = position.coords.accuracy;
+
+                    // Store user location globally
+                    userLocation = { lat, lng };
+
+                    // Remove old marker
+                    if (userMarker) {
+                        map.removeLayer(userMarker);
+                        map.removeLayer(userCircle);
+                    }
+
+                    // Add user marker
+                    userMarker = L.marker([lat, lng], {
+                        icon: L.divIcon({
+                            className: 'custom-div-icon',
+                            html: "<div style='background-color:#3b82f6;width:20px;height:20px;border-radius:50%;border:3px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);'></div>",
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        })
+                    }).addTo(map).bindPopup('📍 你的位置').openPopup();
+
+                    // Add accuracy circle
+                    userCircle = L.circle([lat, lng], {
+                        radius: accuracy,
+                        color: '#3b82f6',
+                        fillColor: '#3b82f6',
+                        fillOpacity: 0.1
+                    }).addTo(map);
+
+                    // Center map on user
+                    map.setView([lat, lng], 14);
+
+                    // Sort locations by distance and re-render
+                    sortLocationsByDistance();
+                    renderLocations();
+
+                    btn.textContent = '📍 已定位';
+                    setTimeout(() => {
+                        btn.textContent = '📍 定位我';
+                    }, 3000);
+                },
+                (error) => {
+                    let message = '無法獲取位置';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            message = '請允許使用定位功能';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            message = '位置資訊不可用';
+                            break;
+                        case error.TIMEOUT:
+                            message = '定位超時，請重試';
+                            break;
+                    }
+                    alert(message);
+                    btn.textContent = '📍 定位我';
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 60000
+                }
+            );
+        }
+
+        // Sort locations by distance from user (for locate button only)
+        function sortByDistance(userLat, userLng) {
+            const sorted = [...locations].sort((a, b) => {
+                const distA = calculateDistance(userLat, userLng, a.lat, a.lng);
+                const distB = calculateDistance(userLat, userLng, b.lat, b.lng);
+                return distA - distB;
+            });
+            
+            // Update list with distance info
+            const currentFilter = document.getElementById('regionFilter').value;
+            
+            // Only show if not filtering by region
+            if (currentFilter === 'all') {
+                document.getElementById('resultCount').textContent = `已按距離排序 - 共 ${sorted.length} 個地點`;
+            }
+        }
+
+        // Sort locations array by distance from user location
+        function sortLocationsByDistance() {
+            if (!userLocation) return;
+            
+            locations.sort((a, b) => {
+                const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
+                const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
+                return distA - distB;
+            });
+        }
+
+        // Event listeners for filters
+        document.getElementById('regionFilter').addEventListener('change', renderLocations);
+        document.getElementById('categoryFilter').addEventListener('change', renderLocations);
+        document.getElementById('ageFilter').addEventListener('change', renderLocations);
+        document.getElementById('priceFilter').addEventListener('change', renderLocations);
+        document.getElementById('indoorFilter').addEventListener('change', renderLocations);
+        document.getElementById('dayFilter').addEventListener('change', renderLocations);
+        document.getElementById('timeFilter').addEventListener('change', renderLocations);
+        document.getElementById('sortFilter').addEventListener('change', renderLocations);
+        
+        // Favorites filter button
+        const favoritesFilterBtn = document.getElementById('favoritesFilter');
+        if (favoritesFilterBtn) {
+            favoritesFilterBtn.addEventListener('click', function() {
+                // 無收藏時唔執行
+                if (favorites.length === 0) return;
+                
+                showFavoritesOnly = !showFavoritesOnly;
+                if (showFavoritesOnly) {
+                    // 啟用篩選：深色紅色
+                    this.classList.remove('bg-red-50', 'border-red-200');
+                    this.classList.add('bg-red-200', 'border-red-400', 'ring-2', 'ring-red-300');
+                } else {
+                    // 取消篩選：淺色紅色
+                    this.classList.remove('bg-red-200', 'border-red-400', 'ring-2', 'ring-red-300');
+                    this.classList.add('bg-red-50', 'border-red-200');
+                }
+                renderLocations();
+            });
+        }
+
+        // Locate button event
+        document.getElementById('locateBtn').addEventListener('click', locateUser);
+        
+        // Initialize favorites UI
+        updateFavoritesUI();
+
+        // Mobile Map Toggle
+        const mapToggleBtn = document.getElementById('mapToggleBtn');
+        const mapContainer = document.getElementById('mapContainer');
+        const mapToggleText = document.getElementById('mapToggleText');
+        const mapToggleArrow = document.getElementById('mapToggleArrow');
+        
+        if (mapToggleBtn && mapContainer) {
+            mapToggleBtn.addEventListener('click', function() {
+                const isHidden = mapContainer.classList.contains('hidden');
+                
+                if (isHidden) {
+                    // Show map
+                    mapContainer.classList.remove('hidden');
+                    mapToggleText.textContent = '隱藏地圖';
+                    mapToggleArrow.classList.add('rotate-180');
+                    
+                    // Refresh map tiles after showing
+                    setTimeout(() => {
+                        map.invalidateSize();
+                    }, 100);
+                    
+                    // Scroll to map
+                    mapContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // Hide map
+                    mapContainer.classList.add('hidden');
+                    mapToggleText.textContent = '顯示地圖';
+                    mapToggleArrow.classList.remove('rotate-180');
+                }
+            });
+        }
+
+        // 設置默認篩選條件（Phase 1: 一入嚟就有答案）
+        function setDefaultFilters() {
+            // 默認：室內、3-6歲、距離2km（如果有定位）
+            document.getElementById('indoorFilter').value = 'indoor';
+            document.getElementById('ageFilter').value = '3-6';
+            document.getElementById('distanceFilter').value = '2000';
+        }
+
+        // 推薦場景按鈕事件
+        document.querySelectorAll('.scenario-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const scenario = this.dataset.scenario;
+                
+                // 重置所有篩選
+                document.getElementById('regionFilter').value = 'all';
+                document.getElementById('categoryFilter').value = 'all';
+                document.getElementById('ageFilter').value = 'all';
+                document.getElementById('priceFilter').value = 'all';
+                document.getElementById('indoorFilter').value = 'all';
+                document.getElementById('distanceFilter').value = 'all';
+                
+                // 根據場景設置篩選
+                switch(scenario) {
+                    case 'rainy':
+                        document.getElementById('indoorFilter').value = 'indoor';
+                        break;
+                    case 'baby':
+                        document.getElementById('ageFilter').value = '0-1'; // 0-1歲
+                        break;
+                    case 'birthday':
+                        // 生日會場地通常係室內 + 3-12歲
+                        document.getElementById('indoorFilter').value = 'indoor';
+                        document.getElementById('ageFilter').value = '3-6';
+                        break;
+                    case 'mtr':
+                        // 近地鐵需要定位
+                        if (!userLocation) {
+                            alert('請先點擊「📍 定位我」以查找附近地鐵站');
+                            document.getElementById('distanceFilter').value = '800';
+                        } else {
+                            document.getElementById('distanceFilter').value = '800';
+                        }
+                        break;
+                }
+                
+                renderLocations();
+                
+                // 滾動到結果區
+                document.getElementById('locationList').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+
+        // 設置默認篩選並渲染
+        setDefaultFilters();
+        
+        // Initial render
+        renderLocations();
+    </script>
+</body>
+</html>
