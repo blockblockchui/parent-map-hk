@@ -1,0 +1,94 @@
+{
+  "metadata": {
+    "exported_at": "2026-02-12T22:40:47.595973",
+    "total_count": 3,
+    "version": "1.0",
+    "source": "Google Sheets"
+  },
+  "locations": [
+    {
+      "id": "538df953",
+      "name": "樹屋 Baumhaus",
+      "nameEn": "Baumhaus",
+      "district": "灣仔",
+      "region": "hk-island",
+      "lat": 22.2755,
+      "lng": 114.1708,
+      "category": "playhouse",
+      "indoor": true,
+      "ageRange": [
+        0,
+        6
+      ],
+      "priceType": "medium",
+      "priceDescription": "$100-200",
+      "description": "木製遊樂空間，提供創意藝術課程及探索樹屋。環境溫馨，適合幼兒自由探索。",
+      "website": "https://www.baumhaus.com.hk/",
+      "tips": null,
+      "openingHours": "09:30-18:00",
+      "address": "灣仔灣仔道3號",
+      "hasBabyRoom": false,
+      "hasStrollerAccess": true,
+      "hasRestaurant": false,
+      "rainyDaySuitable": true,
+      "verified": true,
+      "updatedAt": "2026-02-12T22:40:05.925270"
+    },
+    {
+      "id": "0830dbdc",
+      "name": "香港兒童探索博物館",
+      "nameEn": "Hong Kong Children's Discovery Museum",
+      "district": "西環",
+      "region": "hk-island",
+      "lat": 22.2871,
+      "lng": 114.1378,
+      "category": "museum",
+      "indoor": true,
+      "ageRange": [
+        0,
+        10
+      ],
+      "priceType": "medium",
+      "priceDescription": "$50-100",
+      "description": "互動式博物館，讓小朋友透過遊戲探索科學、藝術和文化。",
+      "website": "https://www.hkcdm.org/",
+      "tips": null,
+      "openingHours": "10:00-18:00（周三休）",
+      "address": "西環皇后大道西550號",
+      "hasBabyRoom": false,
+      "hasStrollerAccess": true,
+      "hasRestaurant": false,
+      "rainyDaySuitable": true,
+      "verified": true,
+      "updatedAt": "2026-02-12T22:40:06.782626"
+    },
+    {
+      "id": "7670014b",
+      "name": "荃灣公園",
+      "nameEn": "Tsuen Wan Park",
+      "district": "荃灣",
+      "region": "nt",
+      "lat": 22.3733,
+      "lng": 114.1141,
+      "category": "park",
+      "indoor": false,
+      "ageRange": [
+        0,
+        12
+      ],
+      "priceType": "free",
+      "priceDescription": "免費",
+      "description": "大型公園設有兒童遊樂場、草坪同緩跑徑，適合家庭野餐同戶外活動。",
+      "website": null,
+      "tips": null,
+      "openingHours": "全日開放",
+      "address": "荃灣大河道",
+      "hasBabyRoom": false,
+      "hasStrollerAccess": true,
+      "hasRestaurant": false,
+      "rainyDaySuitable": true,
+      "verified": true,
+      "updatedAt": "2026-02-12T22:40:07.621009"
+    }
+  ]
+}
