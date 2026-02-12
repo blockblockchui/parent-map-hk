@@ -883,9 +883,13 @@
             let countText = '';
             if (showFavoritesOnly) {
                 countText = `❤️ 我的收藏: ${filtered.length} 個地點`;
-            } else if (distance !== 'all' && userLocation) {
-                const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
-                countText = `📍 ${distanceText}內找到 ${filtered.length} 個地點`;
+            } else if (userLocation) {
+                if (distance !== 'all') {
+                    const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
+                    countText = `📍 ${distanceText}內找到 ${filtered.length} 個地點`;
+                } else {
+                    countText = `📍 已按距離排序 - 共 ${filtered.length} 個地點`;
+                }
             } else if (day !== 'all' || time !== 'all') {
                 const dayNames = { 'mon': '周一', 'tue': '周二', 'wed': '周三', 'thu': '周四', 'fri': '周五', 'sat': '周六', 'sun': '周日' };
                 const timeNames = { 'morning': '早上', 'afternoon': '下午', 'evening': '晚上' };
@@ -907,9 +911,9 @@
             };
             
             listEl.innerHTML = filtered.map(l => {
-                // 計算距離（如果用戶已定位）
+                // 計算距離（如果用戶已定位，一律顯示）
                 let distanceHtml = '';
-                if (userLocation && document.getElementById('distanceFilter').value !== 'all') {
+                if (userLocation) {
                     const dist = calculateDistance(userLocation.lat, userLocation.lng, l.lat, l.lng);
                     const distText = dist >= 1000 ? `${(dist/1000).toFixed(1)}公里` : `${Math.round(dist)}米`;
                     distanceHtml = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">📏 ${distText}</span>`;
