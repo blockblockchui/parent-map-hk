@@ -1,0 +1,114 @@
+# Parent Map HK - Data Sources Configuration
+# Define sources for automatic ingestion
+
+sources:
+  # RSS Feed Sources
+  - name: "U Lifestyle 親子"
+    type: rss
+    url: "https://www.ulifestyle.com.hk/rss/topic/%E8%A6%AA%E5%AD%90"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "published"
+      summary: "summary"
+    recency_window_days: 30
+    category_keywords: ["playhouse", "室內遊樂場", "親子好去處", "放電"]
+    enabled: true
+
+  - name: "新假期 親子"
+    type: rss
+    url: "https://www.weekendhk.com/feed/"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "published"
+      summary: "description"
+    recency_window_days: 30
+    category_keywords: ["playhouse", "室內遊樂場", "親子"]
+    enabled: false  # 需要先確認 RSS URL 正確
+
+  # Sitemap Sources
+  - name: "Oh!爸媽"
+    type: sitemap
+    url: "https://www.ohmykids.hk/sitemap.xml"
+    selectors:
+      article_selector: "article"
+      title_selector: "h1.entry-title"
+      content_selector: "div.entry-content"
+      date_selector: "time.entry-date"
+    recency_window_days: 90
+    category_keywords: ["playhouse", "室內遊樂場", "親子餐廳"]
+    enabled: false  # 需要先確認 sitemap 結構
+
+  # Search/Tag Page Sources
+  - name: "U Lifestyle Tag"
+    type: tag_page
+    url: "https://www.ulifestyle.com.hk/topic/%E5%AE%A4%E5%85%A7%E9%81%8A%E6%A8%82%E5%A0%B4"
+    selectors:
+      article_selector: "article.topic-item"
+      title_selector: "h3.title"
+      link_selector: "a[href]"
+      date_selector: "span.date"
+    recency_window_days: 30
+    pagination: true
+    max_pages: 3
+    enabled: false  # 需要先測試 selector
+
+  # Manual/Curated Sources (High Priority)
+  - name: "Manual Input Queue"
+    type: manual
+    description: "Google Form or manual entries for admin submissions"
+    sheet_tab: "ManualQueue"
+    enabled: true
+
+# Validation Rules
+validation:
+  # HTTP status check
+  http_timeout: 10
+  http_retries: 3
+  
+  # Content freshness
+  content_hash_algorithm: "sha256"
+  hash_cache_ttl_hours: 24
+  
+  # Evidence requirements
+  min_evidence_urls: 1
+  max_evidence_age_days: 180
+  
+  # LLM settings
+  llm_model: "gpt-4o-mini"  # or "claude-3-haiku-20240307"
+  llm_max_tokens: 1000
+  llm_temperature: 0.1
+
+# Export Settings
+export:
+  output_path: "../data/locations.json"
+  dry_run: false
+  git_auto_commit: false
+  git_commit_message: "Update locations.json {date}"
+  
+  # Fields to include in output (frontend needs)
+  output_fields:
+    - id
+    - name
+    - nameEn
+    - district
+    - region
+    - lat
+    - lng
+    - category
+    - indoor
+    - ageRange
+    - priceType
+    - priceDescription
+    - description
+    - website
+    - tips
+    - openingHours
+    - address
+    - hasBabyRoom
+    - hasStrollerAccess
+    - hasRestaurant
+    - rainyDaySuitable
+    - verified
+    - updatedAt
