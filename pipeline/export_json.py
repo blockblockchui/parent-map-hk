@@ -49,19 +49,29 @@ for record in records:
     if not record.get('lat') or not record.get('lng'):
         continue
     
+    # Safely parse coordinates
+    try:
+        lat = float(record['lat']) if record.get('lat') else None
+    except (ValueError, TypeError):
+        lat = None
+    try:
+        lng = float(record['lng']) if record.get('lng') else None
+    except (ValueError, TypeError):
+        lng = None
+    
     location = {
         "id": record.get('place_id', ''),
         "name": record.get('name', ''),
         "nameEn": record.get('name_en') or None,
         "district": record.get('district', ''),
         "region": record.get('region', 'hk-island'),
-        "lat": float(record['lat']) if record.get('lat') else None,
-        "lng": float(record['lng']) if record.get('lng') else None,
+        "lat": lat,
+        "lng": lng,
         "category": record.get('category', 'playhouse'),
         "indoor": str(record.get('indoor', '')).upper() == 'TRUE',
         "ageRange": [
-            int(record['age_min']) if record.get('age_min') else 0,
-            int(record['age_max']) if record.get('age_max') else 6
+            int(record['age_min']) if record.get('age_min') and str(record['age_min']).strip().isdigit() else 0,
+            int(record['age_max']) if record.get('age_max') and str(record['age_max']).strip().isdigit() else 6
         ],
         "priceType": record.get('price_tier', 'medium'),
         "priceDescription": record.get('price_description', '$100-200'),
