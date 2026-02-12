@@ -123,6 +123,11 @@
                     <option value="2000">📍 2公里內</option>
                     <option value="5000">📍 5公里內</option>
                 </select>
+
+                <!-- 我的收藏 -->
+                <button id="favoritesFilter" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg text-sm hover:bg-red-100 transition-colors hidden">
+                    ❤️ 我的收藏 (<span id="favCount">0</span>)
+                </button>
             </div>
         </div>
     </div>
@@ -646,6 +651,43 @@
         // Filter state
         let markers = [];
 
+        // Favorites state
+        let favorites = JSON.parse(localStorage.getItem('parentMapFavorites') || '[]');
+        let showFavoritesOnly = false;
+
+        // Update favorites count and button visibility
+        function updateFavoritesUI() {
+            const favCount = favorites.length;
+            document.getElementById('favCount').textContent = favCount;
+            const favBtn = document.getElementById('favoritesFilter');
+            if (favCount > 0) {
+                favBtn.classList.remove('hidden');
+            } else {
+                favBtn.classList.add('hidden');
+                showFavoritesOnly = false;
+                favBtn.classList.remove('bg-red-100', 'border-red-400');
+                favBtn.classList.add('bg-red-50', 'border-red-200');
+            }
+        }
+
+        // Toggle favorite
+        function toggleFavorite(locationId) {
+            const index = favorites.indexOf(locationId);
+            if (index > -1) {
+                favorites.splice(index, 1);
+            } else {
+                favorites.push(locationId);
+            }
+            localStorage.setItem('parentMapFavorites', JSON.stringify(favorites));
+            updateFavoritesUI();
+            renderLocations();
+        }
+
+        // Check if location is favorite
+        function isFavorite(locationId) {
+            return favorites.includes(locationId);
+        }
+
         // User location storage
         let userLocation = null;
 
@@ -707,6 +749,9 @@
                 if (indoor === 'indoor' && !l.indoor) return false;
                 if (indoor === 'outdoor' && l.indoor) return false;
                 
+                // 我的收藏篩選
+                if (showFavoritesOnly && !favorites.includes(l.id)) return false;
+                
                 return true;
             });
             
@@ -739,8 +784,10 @@
             const listEl = document.getElementById('locationList');
             const countEl = document.getElementById('resultCount');
             
-            // 顯示結果數量（如啟用距離篩選，顯示距離範圍）
-            if (distance !== 'all' && userLocation) {
+            // 顯示結果數量
+            if (showFavoritesOnly) {
+                countEl.textContent = `❤️ 我的收藏: ${filtered.length} 個地點`;
+            } else if (distance !== 'all' && userLocation) {
                 const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
                 countEl.textContent = `📍 ${distanceText}內找到 ${filtered.length} 個地點`;
             } else {
@@ -776,11 +823,18 @@
                         </div>
                     </div>
                     <div class="p-4">
-                        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                            ${categoryLabels[l.category]}
-                        </span>
-                        ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded ml-1">⚠️ 未驗證</span>' : ''}
-                        ${distanceHtml}
+                        <div class="flex items-start justify-between">
+                            <div class="flex flex-wrap gap-1">
+                                <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                                    ${categoryLabels[l.category]}
+                                </span>
+                                ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
+                                ${distanceHtml}
+                            </div>
+                            <button onclick="toggleFavorite('${l.id}')" class="text-2xl hover:scale-110 transition-transform" title="${isFavorite(l.id) ? '取消收藏' : '加入收藏'}">
+                                ${isFavorite(l.id) ? '❤️' : '🤍'}
+                            </button>
+                        </div>
                         <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
                         ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
                         
@@ -1082,9 +1136,28 @@
         document.getElementById('ageFilter').addEventListener('change', renderLocations);
         document.getElementById('priceFilter').addEventListener('change', renderLocations);
         document.getElementById('indoorFilter').addEventListener('change', renderLocations);
+        
+        // Favorites filter button
+        const favoritesFilterBtn = document.getElementById('favoritesFilter');
+        if (favoritesFilterBtn) {
+            favoritesFilterBtn.addEventListener('click', function() {
+                showFavoritesOnly = !showFavoritesOnly;
+                if (showFavoritesOnly) {
+                    this.classList.remove('bg-red-50', 'border-red-200');
+                    this.classList.add('bg-red-100', 'border-red-400');
+                } else {
+                    this.classList.remove('bg-red-100', 'border-red-400');
+                    this.classList.add('bg-red-50', 'border-red-200');
+                }
+                renderLocations();
+            });
+        }
 
         // Locate button event
         document.getElementById('locateBtn').addEventListener('click', locateUser);
+        
+        // Initialize favorites UI
+        updateFavoritesUI();
 
         // Mobile Map Toggle
         const mapToggleBtn = document.getElementById('mapToggleBtn');
