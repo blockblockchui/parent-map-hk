@@ -172,6 +172,11 @@
                 <button id="favoritesFilter" class="px-3 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50">
                     ❤️ 我的收藏 (<span id="favCount">0</span>)
                 </button>
+                
+                <!-- 清空收藏 -->
+                <button id="clearFavoritesBtn" class="px-3 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-sm hover:bg-red-100 hover:text-red-600 hover:border-red-200 transition-colors disabled:opacity-50 disabled:hover:bg-gray-100 disabled:hover:text-gray-400" disabled>
+                    🗑️ 清空收藏
+                </button>
             </div>
         </div>
     </div>
@@ -298,18 +303,42 @@
             const favCount = favorites.length;
             document.getElementById('favCount').textContent = favCount;
             const favBtn = document.getElementById('favoritesFilter');
+            const clearBtn = document.getElementById('clearFavoritesBtn');
             
             if (favCount > 0) {
                 // 有收藏：變成紅色可用狀態
                 favBtn.classList.remove('bg-gray-100', 'text-gray-400', 'border-gray-200');
                 favBtn.classList.add('bg-red-50', 'text-red-600', 'border-red-200', 'hover:bg-red-100');
                 favBtn.disabled = false;
+                // 啟用清空按鈕
+                clearBtn.disabled = false;
+                clearBtn.classList.remove('bg-gray-100', 'text-gray-400');
+                clearBtn.classList.add('bg-gray-50', 'text-gray-600');
             } else {
                 // 無收藏：greyed out
                 favBtn.classList.remove('bg-red-50', 'text-red-600', 'border-red-200', 'hover:bg-red-100');
                 favBtn.classList.add('bg-gray-100', 'text-gray-400', 'border-gray-200');
                 favBtn.disabled = true;
                 showFavoritesOnly = false;
+                // 禁用清空按鈕
+                clearBtn.disabled = true;
+                clearBtn.classList.remove('bg-gray-50', 'text-gray-600');
+                clearBtn.classList.add('bg-gray-100', 'text-gray-400');
+            }
+        }
+
+        // Clear all favorites with confirmation
+        function clearAllFavorites() {
+            if (favorites.length === 0) return;
+            
+            const confirmed = confirm(`確定要清空所有 ${favorites.length} 個收藏嗎？\n\n此操作無法復原。`);
+            if (confirmed) {
+                favorites = [];
+                localStorage.setItem('parentMapFavorites', JSON.stringify(favorites));
+                showFavoritesOnly = false;
+                updateFavoritesUI();
+                renderLocations();
+                alert('✅ 已清空所有收藏');
             }
         }
 
@@ -963,6 +992,14 @@
                     this.classList.add('bg-red-50', 'border-red-200');
                 }
                 renderLocations();
+            });
+        }
+        
+        // Clear favorites button
+        const clearFavoritesBtn = document.getElementById('clearFavoritesBtn');
+        if (clearFavoritesBtn) {
+            clearFavoritesBtn.addEventListener('click', function() {
+                clearAllFavorites();
             });
         }
 
