@@ -142,7 +142,7 @@
 
                 <!-- 排序方式 -->
                 <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
-                    <option value="default">🔥 排序：智能推薦</option>
+                    <option value="default">📍 排序：距離最近</option>
                     <option value="updated">📅 排序：最近更新</option>
                     <option value="price-asc">💰 排序：價格低→高</option>
                     <option value="price-desc">💰 排序：價格高→低</option>
@@ -942,7 +942,7 @@
                     filtered.sort((a, b) => getPriceValue(b.priceType) - getPriceValue(a.priceType));
                     break;
                 default:
-                    // 智能推薦：有定位就按距離，冇就按評分/熱度
+                    // 距離最近：有定位就按距離排序
                     if (userLocation) {
                         filtered.sort((a, b) => {
                             const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
