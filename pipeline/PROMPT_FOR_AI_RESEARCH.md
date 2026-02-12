@@ -1,93 +1,146 @@
-# Parent Map HK - 地點資料收集 Prompt
+# Parent Map HK — 香港親子地點資料收集（最終強化版）
 
-## 任務
+你現在是一名具備網絡搜尋能力的資料研究員。
 
-請幫我收集香港親子地點（playhouse/室內遊樂場/親子餐廳）嘅詳細資料，並按以下格式輸出。
+任務是為「Parent Map HK（親子地圖）」收集香港親子地點資料（優先：室內 Playhouse，其次：親子餐廳）。
 
-## 輸出格式（CSV 格式）
+⚠️ 必須嚴格遵守 Evidence-first 原則。
+⚠️ 不得憑空推測或編造資料。
 
-請以 **CSV 格式** 輸出，方便我直接複製到 Google Sheets：
+---
 
-```csv
-place_id,name,name_en,region,district,address,lat,lng,category,indoor,age_min,age_max,price_tier,price_description,description,opening_hours,website_url,facebook_url,instagram_url,status,tips
-```
+# 🎯 任務目標
 
-## 欄位說明
+請搜尋並整理 至少 10 個香港室內 playhouse 或親子餐廳 的完整資料。
 
-| 欄位 | 必填 | 說明 | 示例 |
-|------|------|------|------|
-| place_id | ✓ | 自動生成 8 位英數字 | 系統自動生成 |
-| name | ✓ | 中文名稱 | 樹屋 Baumhaus |
-| name_en | | 英文名稱 | Baumhaus |
-| region | ✓ | hk-island/kowloon/nt | hk-island |
-| district | ✓ | 十八區之一 | 灣仔 |
-| address | ✓ | 完整地址 | 灣仔灣仔道3號 |
-| lat | ✓ | 緯度 | 22.2755 |
-| lng | ✓ | 經度 | 114.1708 |
-| category | ✓ | playhouse/park/museum/restaurant | playhouse |
-| indoor | ✓ | TRUE/FALSE | TRUE |
-| age_min | ✓ | 最小適合年齡 | 0 |
-| age_max | ✓ | 最大適合年齡 | 6 |
-| price_tier | ✓ | free/low/medium/high | medium |
-| price_description | ✓ | 價格描述 | $100-200/位 |
-| description | ✓ | 100-150字介紹 | 木製遊樂空間... |
-| opening_hours | ✓ | 營業時間 | 09:30-18:00 |
-| website_url | | 官網 | https://... |
-| facebook_url | | FB 專頁 | https://facebook.com/... |
-| instagram_url | | IG 帳號 | @baumhaus |
-| status | ✓ | 固定填 Open | Open |
-| tips | | 貼士/備註 | 需預約、有儲奶室等 |
+---
 
-## 重要規則
+# 📦 輸出格式（必須為純 CSV）
 
-### 1. 資料來源要求（Evidence-first）
-- 每個地點必須提供 **至少 1 個來源 URL**
-- 優先使用：官方網站、官方社交媒體、可信媒體報導
-- 避免：討論區傳言、無日期來源
-
-### 2. 結業檢查（必做）
-搜尋時請檢查：
-- 是否有「結業」「停止營業」「closed」等關鍵字
-- Google Maps 是否顯示「永久結業」
-- 官方網站是否 404/顯示結業公告
-
-**如發現疑似結業，請標記：**
-```csv
-status,notes
-SuspectedClosed,網站無法訪問/最後貼文為2024年X月
-```
-
-### 3. 座標獲取
-請提供準確座標：
-- 方法 1：Google Maps 搜地點名，右鍵「複製經緯度」
-- 方法 2：搜地址後睇 URL 入面嘅 @lat,lng
-
-### 4. 價格分級
-- **free**: 完全免費
-- **low**: $0-100
-- **medium**: $100-300
-- **high**: $300+
-
-## 輸出示例
+只輸出 CSV，第一行為 header，不要 Markdown table，不要額外說明。
 
 ```csv
-place_id,name,name_en,region,district,address,lat,lng,category,indoor,age_min,age_max,price_tier,price_description,description,opening_hours,website_url,facebook_url,instagram_url,status,tips
-auto-gen,樹屋 Baumhaus,Baumhaus,hk-island,灣仔,灣仔灣仔道3號,22.2755,114.1708,playhouse,TRUE,0,6,medium,$100-200/位,木製遊樂空間，提供創意藝術課程及探索樹屋。環境溫馨，設有嬰兒換片室，適合0-6歲幼兒自由探索。,09:30-18:00,https://www.baumhaus.com.hk/,https://facebook.com/baumhaus,baumhaus_hk,Open,需網上預約；設有哺乳室
-auto-gen,香港兒童探索博物館,Hong Kong Children's Discovery Museum,hk-island,西環,西環皇后大道西550號,22.2871,114.1378,museum,TRUE,0,10,medium,$50-100/位,互動式博物館，讓小朋友透過遊戲探索科學、藝術和文化。設有多個主題展區，適合不同年齡層。,10:00-18:00（周三休）,https://www.hkcdm.org/,https://facebook.com/hkcdm,,Open,周三休館；建議預約時段
+place_id,name,name_en,region,district,address,lat,lng,category,indoor,age_min,age_max,price_tier,price_description,description,opening_hours,website_url,facebook_url,instagram_url,google_maps_url,status,tips,source_urls,checked_at
 ```
 
-## 請提供
+---
 
-1. **地點名稱**（我可以幫你搜尋）
-2. **或地區**（例如：「灣仔有咩新 playhouse？」）
-3. **或主題**（例如：「有咩適合 2歲以下嘅室內遊樂場？」）
+# 📋 欄位規則（嚴格執行）
 
-## 我會幫你
+### 基本規則
+* place_id：生成 8 位隨機英數字（每行唯一）
+* region：只可填 hk-island / kowloon / nt
+* category：只可填 playhouse / restaurant
+* indoor：只可填 TRUE
+* status：只可填 Open / SuspectedClosed
+* checked_at：填寫今天日期（YYYY-MM-DD）
 
-- ✅ 搜尋最新資料
-- ✅ 檢查是否結業
-- ✅ 獲取準確座標
-- ✅ 按 CSV 格式整理
-- ✅ 提供來源 URL
+---
 
-請告訴我你想搜尋咩地點或地區？
+### 地址與座標（極重要）
+* address 必須為完整地址（商場名稱 + 樓層如有）
+* lat/lng 必須準確（建議使用 Google Maps）
+* 若無法取得準確座標 → 不要輸出該地點
+
+---
+
+### 價格分級
+* free：完全免費
+* low：$0–100
+* medium：$100–300
+* high：$300+
+
+---
+
+### description
+* 100–150 字
+* 客觀描述
+* 不可加入未經證實的設施或宣傳語
+* 只能根據來源內容整理
+
+---
+
+# 🔍 Evidence-first 原則（強制）
+
+每個地點必須：
+* 至少提供 1 個來源 URL（放在 source_urls）
+* 優先來源：
+  * 官方網站
+  * 官方 Facebook / Instagram
+  * Google Maps
+  * 可信媒體報導（需有日期）
+
+source_urls 格式：
+```
+https://official.com | https://facebook.com/xxx | https://maps.google.com/xxx
+```
+
+---
+
+# 🚨 結業檢查（必做）
+
+對每個地點必須搜尋：
+* 地點名 + 結業
+* 地點名 + closed
+* Google Maps 是否顯示 "Permanently closed"
+* 官網是否 404
+
+如發現疑似結業：
+* status = SuspectedClosed
+* tips 填寫原因（例如：「Google Maps 顯示永久結業（2026-01-02）」或「官網 404」）
+* source_urls 必須包含對應證據
+
+若無結業證據：
+* status = Open
+
+---
+
+# ❌ 嚴禁行為
+
+* 不得編造地址
+* 不得推測年齡層（必須有來源支持）
+* 不得假設商場一定有育嬰室
+* 不得填寫不在來源中出現的營業時間
+* 不得填寫空白 lat/lng
+
+---
+
+# 📌 tips 欄位用途
+
+可填寫：
+* 需預約
+* 有換片位
+* 平日/週末不同收費
+* 近地鐵站
+* 疑似結業原因
+
+必須基於來源。
+
+---
+
+# 📅 checked_at
+
+填寫今天日期（YYYY-MM-DD）。
+
+---
+
+# 📊 數據品質優先級
+
+1. 官方網站
+2. 官方社交媒體
+3. Google Maps
+4. 主流媒體
+
+若資料衝突，以官方為準。
+
+---
+
+# 📤 最終要求
+
+* 至少輸出 10 行
+* 不可輸出重複地點
+* 同名不同分店視為不同地點（地址不同）
+* 只輸出 CSV，無額外文字
+* 所有地點必須有準確地址 + 座標 + 至少 1 個來源
+
+開始搜尋並輸出結果。
