@@ -1184,7 +1184,8 @@
                     // Center map on user
                     map.setView([lat, lng], 14);
 
-                    // Re-render with distance filter support
+                    // Sort locations by distance and re-render
+                    sortLocationsByDistance();
                     renderLocations();
 
                     btn.textContent = '📍 已定位';
@@ -1231,6 +1232,17 @@
             if (currentFilter === 'all') {
                 document.getElementById('resultCount').textContent = `已按距離排序 - 共 ${sorted.length} 個地點`;
             }
+        }
+
+        // Sort locations array by distance from user location
+        function sortLocationsByDistance() {
+            if (!userLocation) return;
+            
+            locations.sort((a, b) => {
+                const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
+                const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
+                return distA - distB;
+            });
         }
 
         // Event listeners for filters
