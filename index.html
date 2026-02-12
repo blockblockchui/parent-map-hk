@@ -15,11 +15,31 @@
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <h1 class="text-2xl font-bold text-gray-900">🗺️ 香港親子地圖</h1>
-            <p class="text-sm text-gray-600">發掘全港最適合親子活動的好去處</p>
+    <!-- Hero Section -->
+    <header class="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div class="max-w-7xl mx-auto px-4 py-8 md:py-12">
+            <div class="text-center">
+                <h1 class="text-3xl md:text-4xl font-bold mb-2">🗺️ 香港親子地圖</h1>
+                <p class="text-lg md:text-xl text-blue-100 mb-6">發掘全港最適合親子活動的好去處</p>
+                
+                <!-- 快速搜尋 -->
+                <div class="max-w-2xl mx-auto flex gap-2">
+                    <input type="text" id="searchInput" placeholder="🔍 搜尋地點名稱、地區或類型..." 
+                           class="flex-1 px-4 py-3 rounded-lg text-gray-900 text-base focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    <button id="searchBtn" class="px-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-300 transition-colors">
+                        搜尋
+                    </button>
+                </div>
+                
+                <!-- 快速篩選標籤 -->
+                <div class="mt-4 flex flex-wrap justify-center gap-2">
+                    <button class="quick-filter px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm" data-filter="indoor">🏠 室內</button>
+                    <button class="quick-filter px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm" data-filter="free">🆓 免費</button>
+                    <button class="quick-filter px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm" data-filter="playhouse">🎪 遊樂場</button>
+                    <button class="quick-filter px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm" data-filter="park">🌳 公園</button>
+                    <button class="quick-filter px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-sm" data-filter="museum">🏛️ 博物館</button>
+                </div>
+            </div>
         </div>
     </header>
 
@@ -713,6 +733,15 @@
                 countEl.textContent = `共 ${filtered.length} 個地點`;
             }
             
+            // Category icons and colors
+            const categoryIcons = {
+                museum: { icon: '🏛️', bg: 'from-amber-400 to-orange-500' },
+                park: { icon: '🌳', bg: 'from-green-400 to-emerald-500' },
+                playhouse: { icon: '🎪', bg: 'from-blue-400 to-indigo-500' },
+                restaurant: { icon: '🍽️', bg: 'from-rose-400 to-pink-500' },
+                library: { icon: '📚', bg: 'from-violet-400 to-purple-500' }
+            };
+            
             listEl.innerHTML = filtered.map(l => {
                 // 計算距離（如果用戶已定位）
                 let distanceHtml = '';
@@ -722,10 +751,15 @@
                     distanceHtml = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">📏 ${distText}</span>`;
                 }
                 
+                const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
+                
                 return `
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-                    <div class="h-40 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
-                        <span class="text-white text-4xl">🎯</span>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="h-40 bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative">
+                        <span class="text-white text-5xl drop-shadow-lg">${catStyle.icon}</span>
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                            <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
+                        </div>
                     </div>
                     <div class="p-4">
                         <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
@@ -805,6 +839,128 @@
         document.getElementById('priceFilter').addEventListener('change', renderLocations);
         document.getElementById('indoorFilter').addEventListener('change', renderLocations);
         document.getElementById('distanceFilter').addEventListener('change', renderLocations);
+        
+        // 搜尋功能
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        
+        function handleSearch() {
+            const query = searchInput.value.toLowerCase().trim();
+            if (!query) {
+                renderLocations();
+                return;
+            }
+            
+            const filtered = locations.filter(l => 
+                l.name.toLowerCase().includes(query) ||
+                l.district.toLowerCase().includes(query) ||
+                l.description.toLowerCase().includes(query) ||
+                l.category.toLowerCase().includes(query)
+            );
+            
+            // 更新列表
+            const listEl = document.getElementById('locationList');
+            const countEl = document.getElementById('resultCount');
+            countEl.textContent = `🔍 搜尋「${query}」找到 ${filtered.length} 個地點`;
+            
+            // 渲染搜尋結果
+            renderSearchResults(filtered);
+        }
+        
+        searchBtn.addEventListener('click', handleSearch);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSearch();
+        });
+        
+        // 快速篩選
+        document.querySelectorAll('.quick-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter;
+                if (filter === 'indoor') {
+                    document.getElementById('indoorFilter').value = 'indoor';
+                } else if (filter === 'free') {
+                    document.getElementById('priceFilter').value = '0-100';
+                } else {
+                    document.getElementById('categoryFilter').value = filter;
+                }
+                renderLocations();
+                // Scroll to results
+                document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+        
+        // 渲染搜尋結果（復用 renderLocations 嘅邏輯）
+        function renderSearchResults(searchResults) {
+            const listEl = document.getElementById('locationList');
+            
+            if (searchResults.length === 0) {
+                listEl.innerHTML = `
+                    <div class="col-span-full text-center py-12 text-gray-500">
+                        <span class="text-4xl block mb-4">🔍</span>
+                        <p>找不到符合條件的地點</p>
+                        <p class="text-sm mt-2">試試其他關鍵字</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // 使用相同嘅渲染邏輯
+            const categoryIcons = {
+                museum: { icon: '🏛️', bg: 'from-amber-400 to-orange-500' },
+                park: { icon: '🌳', bg: 'from-green-400 to-emerald-500' },
+                playhouse: { icon: '🎪', bg: 'from-blue-400 to-indigo-500' },
+                restaurant: { icon: '🍽️', bg: 'from-rose-400 to-pink-500' },
+                library: { icon: '📚', bg: 'from-violet-400 to-purple-500' }
+            };
+            
+            listEl.innerHTML = searchResults.map(l => {
+                const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
+                
+                return `
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <div class="h-40 bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative">
+                        <span class="text-white text-5xl drop-shadow-lg">${catStyle.icon}</span>
+                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                            <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                            ${categoryLabels[l.category]}
+                        </span>
+                        ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded ml-1">⚠️ 未驗證</span>' : ''}
+                        <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
+                        ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
+                        
+                        <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
+                            <span>📍</span>
+                            <span>${regionLabels[l.region]} · ${l.district}</span>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 mb-3">
+                            ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : ''}
+                            ${l.rainyDaySuitable ? '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">☂️雨天適合</span>' : ''}
+                            ${l.hasBabyRoom ? '<span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">👶哺乳室</span>' : ''}
+                            ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
+                        </div>
+
+                        <div class="flex items-center justify-between text-sm mb-3">
+                            <span class="text-gray-600">適合：${l.ageRange[0]}-${l.ageRange[1]}歲</span>
+                            <span class="font-medium ${l.priceType === 'free' ? 'text-green-600' : 'text-gray-700'}">${priceLabels[l.priceType]}</span>
+                        </div>
+
+                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description}</p>
+
+                        <div class="flex gap-2 pt-3 border-t">
+                            ${l.phone ? `<a href="tel:${l.phone}" class="flex-1 py-2 text-sm text-gray-700 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors">📞 電話</a>` : ''}
+                            <a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-green-700 bg-green-50 rounded text-center hover:bg-green-100 transition-colors">🗺️ 路線</a>
+                            ${l.website ? `<a href="${l.website}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">🌐 網站</a>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            }).join('');
+        }
 
         // User location marker
         let userMarker = null;
