@@ -139,7 +139,7 @@
     </div>
 
     <!-- Map with Locate Button -->
-    <div id="mapContainer" class="relative hidden md:block">
+    <div id="mapContainer" class="relative md:block">
         <div id="map"></div>
         <button id="locateBtn" class="absolute bottom-4 right-4 z-[500] bg-white p-3 rounded-full shadow-lg hover:bg-gray-100 transition-colors" title="定位我的位置">
             📍 定位我
@@ -1117,6 +1117,22 @@
                 }
             });
         }
+
+        // Mobile detection - hide map by default on mobile
+        function initMapVisibility() {
+            const isMobile = window.innerWidth < 768; // md breakpoint
+            const mapContainer = document.getElementById('mapContainer');
+            
+            if (isMobile && mapContainer) {
+                mapContainer.classList.add('hidden');
+            }
+        }
+        
+        // Run on page load
+        initMapVisibility();
+        
+        // Also run on resize
+        window.addEventListener('resize', initMapVisibility);
 
         // Initial render
         renderLocations();
