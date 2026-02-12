@@ -124,6 +124,26 @@
                     <option value="5000">📍 5公里內</option>
                 </select>
 
+                <!-- 開放日 -->
+                <select id="dayFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何日子</option>
+                    <option value="mon">星期一</option>
+                    <option value="tue">星期二</option>
+                    <option value="wed">星期三</option>
+                    <option value="thu">星期四</option>
+                    <option value="fri">星期五</option>
+                    <option value="sat">星期六</option>
+                    <option value="sun">星期日</option>
+                </select>
+
+                <!-- 開放時間 -->
+                <select id="timeFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何時間</option>
+                    <option value="morning">☀️ 早上 (08:00-12:00)</option>
+                    <option value="afternoon">🌤️ 下午 (12:00-18:00)</option>
+                    <option value="evening">🌙 晚上 (18:00-22:00)</option>
+                </select>
+
                 <!-- 我的收藏 -->
                 <button id="favoritesFilter" class="px-3 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50">
                     ❤️ 我的收藏 (<span id="favCount">0</span>)
@@ -712,6 +732,68 @@
             return R * c; // Distance in meters
         }
 
+        // 檢查開放日是否匹配
+        function checkOpenDay(openingHours, selectedDay) {
+            if (selectedDay === 'all') return true;
+            if (!openingHours) return true;
+            
+            const hours = openingHours.toLowerCase();
+            const dayMap = {
+                'mon': ['周一', '星期一', 'mon'],
+                'tue': ['周二', '星期二', 'tue'],
+                'wed': ['周三', '星期三', 'wed'],
+                'thu': ['周四', '星期四', 'thu'],
+                'fri': ['周五', '星期五', 'fri'],
+                'sat': ['周六', '星期六', 'sat'],
+                'sun': ['周日', '星期日', 'sun']
+            };
+            
+            const dayNames = dayMap[selectedDay];
+            
+            // 檢查是否包含休息日標記
+            for (const name of dayNames) {
+                if (hours.includes(name + '休') || hours.includes(name + '休息')) {
+                    return false; // 呢日休息
+                }
+            }
+            
+            // 如果寫明「全日」或「每天」，表示開放
+            if (hours.includes('全日') || hours.includes('每天') || hours.includes('24小時')) {
+                return true;
+            }
+            
+            // 默認開放（如果無特別標記休息）
+            return true;
+        }
+
+        // 檢查開放時間是否匹配
+        function checkOpenTime(openingHours, selectedTime) {
+            if (selectedTime === 'all') return true;
+            if (!openingHours) return true;
+            
+            const hours = openingHours.toLowerCase();
+            
+            // 提取時間範圍（簡化處理）
+            const timeMatch = hours.match(/(\d{1,2}):?(\d{2})?\s*[\-–~]\s*(\d{1,2}):?(\d{2})?/);
+            if (!timeMatch) return true; // 無法解析，默認開放
+            
+            const openHour = parseInt(timeMatch[1]);
+            const closeHour = parseInt(timeMatch[3]);
+            
+            // 時間段定義
+            const timeRanges = {
+                'morning': { start: 8, end: 12 },    // 08:00-12:00
+                'afternoon': { start: 12, end: 18 }, // 12:00-18:00
+                'evening': { start: 18, end: 22 }    // 18:00-22:00
+            };
+            
+            const selectedRange = timeRanges[selectedTime];
+            if (!selectedRange) return true;
+            
+            // 檢查是否有重疊
+            return (openHour < selectedRange.end && closeHour > selectedRange.start);
+        }
+
         function renderLocations() {
             const region = document.getElementById('regionFilter').value;
             const category = document.getElementById('categoryFilter').value;
@@ -719,6 +801,8 @@
             const price = document.getElementById('priceFilter').value;
             const indoor = document.getElementById('indoorFilter').value;
             const distance = document.getElementById('distanceFilter').value;
+            const day = document.getElementById('dayFilter').value;
+            const time = document.getElementById('timeFilter').value;
 
             let filtered = locations.filter(l => {
                 // 地區篩選（十八區）
@@ -757,6 +841,12 @@
                 // 我的收藏篩選
                 if (showFavoritesOnly && !favorites.includes(l.id)) return false;
                 
+                // 開放日篩選
+                if (day !== 'all' && !checkOpenDay(l.openingHours, day)) return false;
+                
+                // 開放時間篩選
+                if (time !== 'all' && !checkOpenTime(l.openingHours, time)) return false;
+                
                 return true;
             });
             
@@ -790,14 +880,22 @@
             const countEl = document.getElementById('resultCount');
             
             // 顯示結果數量
+            let countText = '';
             if (showFavoritesOnly) {
-                countEl.textContent = `❤️ 我的收藏: ${filtered.length} 個地點`;
+                countText = `❤️ 我的收藏: ${filtered.length} 個地點`;
             } else if (distance !== 'all' && userLocation) {
                 const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
-                countEl.textContent = `📍 ${distanceText}內找到 ${filtered.length} 個地點`;
+                countText = `📍 ${distanceText}內找到 ${filtered.length} 個地點`;
+            } else if (day !== 'all' || time !== 'all') {
+                const dayNames = { 'mon': '周一', 'tue': '周二', 'wed': '周三', 'thu': '周四', 'fri': '周五', 'sat': '周六', 'sun': '周日' };
+                const timeNames = { 'morning': '早上', 'afternoon': '下午', 'evening': '晚上' };
+                const dayText = day !== 'all' ? dayNames[day] : '';
+                const timeText = time !== 'all' ? timeNames[time] : '';
+                countText = `🕐 ${dayText}${timeText}開放: ${filtered.length} 個地點`;
             } else {
-                countEl.textContent = `共 ${filtered.length} 個地點`;
+                countText = `共 ${filtered.length} 個地點`;
             }
+            countEl.textContent = countText;
             
             // Category icons and colors
             const categoryIcons = {
@@ -1141,6 +1239,8 @@
         document.getElementById('ageFilter').addEventListener('change', renderLocations);
         document.getElementById('priceFilter').addEventListener('change', renderLocations);
         document.getElementById('indoorFilter').addEventListener('change', renderLocations);
+        document.getElementById('dayFilter').addEventListener('change', renderLocations);
+        document.getElementById('timeFilter').addEventListener('change', renderLocations);
         
         // Favorites filter button
         const favoritesFilterBtn = document.getElementById('favoritesFilter');
