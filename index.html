@@ -90,6 +90,16 @@
                     <option value="indoor">🏠 室內</option>
                     <option value="outdoor">☀️ 室外</option>
                 </select>
+
+                <!-- 距離篩選（需要定位） -->
+                <select id="distanceFilter" class="px-3 py-2 border rounded-lg text-sm">
+                    <option value="all">任何距離</option>
+                    <option value="400">📍 400米內</option>
+                    <option value="800">📍 800米內</option>
+                    <option value="1000">📍 1公里內</option>
+                    <option value="2000">📍 2公里內</option>
+                    <option value="5000">📍 5公里內</option>
+                </select>
             </div>
         </div>
     </div>
@@ -332,14 +342,34 @@
         // Filter state
         let markers = [];
 
+        // User location storage
+        let userLocation = null;
+
+        // Haversine formula to calculate distance
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371e3; // Earth radius in meters
+            const φ1 = lat1 * Math.PI / 180;
+            const φ2 = lat2 * Math.PI / 180;
+            const Δφ = (lat2 - lat1) * Math.PI / 180;
+            const Δλ = (lng2 - lng1) * Math.PI / 180;
+            
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c; // Distance in meters
+        }
+
         function renderLocations() {
             const region = document.getElementById('regionFilter').value;
             const category = document.getElementById('categoryFilter').value;
             const age = document.getElementById('ageFilter').value;
             const price = document.getElementById('priceFilter').value;
             const indoor = document.getElementById('indoorFilter').value;
+            const distance = document.getElementById('distanceFilter').value;
 
-            const filtered = locations.filter(l => {
+            let filtered = locations.filter(l => {
                 // 地區篩選（十八區）
                 if (region !== 'all' && !l.district.includes(region)) return false;
                 
@@ -375,14 +405,54 @@
                 
                 return true;
             });
+            
+            // 距離篩選（需要用戶已定位）
+            if (distance !== 'all') {
+                if (!userLocation) {
+                    // 提示用戶需要先定位
+                    alert('📍 請先點擊「定位我」按鈕，再使用距離篩選功能');
+                    document.getElementById('distanceFilter').value = 'all';
+                } else {
+                    const maxDistance = parseInt(distance);
+                    filtered = filtered.filter(l => {
+                        const dist = calculateDistance(
+                            userLocation.lat, userLocation.lng,
+                            l.lat, l.lng
+                        );
+                        return dist <= maxDistance;
+                    });
+                    
+                    // 按距離排序
+                    filtered.sort((a, b) => {
+                        const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
+                        const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
+                        return distA - distB;
+                    });
+                }
+            }
 
             // Update list
             const listEl = document.getElementById('locationList');
             const countEl = document.getElementById('resultCount');
             
-            countEl.textContent = `共 ${filtered.length} 個地點`;
+            // 顯示結果數量（如啟用距離篩選，顯示距離範圍）
+            if (distance !== 'all' && userLocation) {
+                const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
+                countEl.textContent = `📍 ${distanceText}內找到 ${filtered.length} 個地點`;
+            } else {
+                countEl.textContent = `共 ${filtered.length} 個地點`;
+            }
             
-            listEl.innerHTML = filtered.map(l => `
+            listEl.innerHTML = filtered.map(l => {
+                // 計算距離（如果用戶已定位）
+                let distanceHtml = '';
+                if (userLocation && document.getElementById('distanceFilter').value !== 'all') {
+                    const dist = calculateDistance(userLocation.lat, userLocation.lng, l.lat, l.lng);
+                    const distText = dist >= 1000 ? `${(dist/1000).toFixed(1)}公里` : `${Math.round(dist)}米`;
+                    distanceHtml = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">📏 ${distText}</span>`;
+                }
+                
+                return `
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                     <div class="h-40 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
                         <span class="text-white text-4xl">🎯</span>
@@ -392,6 +462,7 @@
                             ${categoryLabels[l.category]}
                         </span>
                         ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded ml-1">⚠️ 未驗證</span>' : ''}
+                        ${distanceHtml}
                         <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
                         ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
                         
@@ -426,7 +497,8 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             // Update map markers
             markers.forEach(m => map.removeLayer(m));
@@ -462,6 +534,7 @@
         document.getElementById('ageFilter').addEventListener('change', renderLocations);
         document.getElementById('priceFilter').addEventListener('change', renderLocations);
         document.getElementById('indoorFilter').addEventListener('change', renderLocations);
+        document.getElementById('distanceFilter').addEventListener('change', renderLocations);
 
         // User location marker
         let userMarker = null;
@@ -483,6 +556,9 @@
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     const accuracy = position.coords.accuracy;
+
+                    // Store user location globally
+                    userLocation = { lat, lng };
 
                     // Remove old marker
                     if (userMarker) {
@@ -511,8 +587,8 @@
                     // Center map on user
                     map.setView([lat, lng], 14);
 
-                    // Sort locations by distance
-                    sortByDistance(lat, lng);
+                    // Re-render with distance filter support
+                    renderLocations();
 
                     btn.textContent = '📍 已定位';
                     setTimeout(() => {
