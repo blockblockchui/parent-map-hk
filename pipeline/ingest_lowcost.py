@@ -83,9 +83,22 @@ print(f"  現有: {len(existing)} 個地點")
 # Results
 found_places = []
 
+def extract_real_url_from_bing(url):
+    """Extract real URL from Bing redirect URL"""
+    if 'bing.com/news/apiclick.aspx' in url:
+        import urllib.parse
+        parsed = urllib.parse.urlparse(url)
+        params = urllib.parse.parse_qs(parsed.query)
+        if 'url' in params:
+            return urllib.parse.unquote(params['url'][0])
+    return url
+
 async def fetch_url(url, timeout=10):
     """Fetch URL with timeout"""
     try:
+        # Handle Bing redirect URLs
+        url = extract_real_url_from_bing(url)
+        
         async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
             response = await client.get(url, headers={
                 "User-Agent": "Mozilla/5.0 (compatible; ParentMapBot/1.0)"
@@ -98,6 +111,9 @@ def extract_place_info(title, summary, url):
     """Extract place info from title and summary (without LLM)"""
     text = f"{title} {summary}"
     
+    # Handle Bing redirect URLs
+    real_url = extract_real_url_from_bing(url)
+    
     # Pattern matching for common formats
     place = {
         'name': title.split('|')[0].split('–')[0].split('-')[0].strip()[:50],
@@ -106,8 +122,8 @@ def extract_place_info(title, summary, url):
         'district': '',
         'address': '',
         'description': summary[:200] if summary else title[:200],
-        'website_url': url,
-        'source_url': url,
+        'website_url': real_url,
+        'source_url': real_url,
     }
     
     # Try to extract district

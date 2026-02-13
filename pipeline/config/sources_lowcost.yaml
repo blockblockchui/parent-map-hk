@@ -51,6 +51,43 @@ sources:
     category_keywords: ["playhouse", "室內", "遊樂場", "親子"]
     enabled: true
 
+  # Bing News RSS (免費)
+  - name: "Bing News 香港親子遊樂場"
+    type: rss
+    url: "https://www.bing.com/news/search?q=%E9%A6%99%E6%B8%AF+%E8%A6%AA%E5%AD%90+%E9%81%8A%E6%A8%82%E5%A0%B4&format=rss"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "pubDate"
+      summary: "description"
+    recency_window_days: 7
+    category_keywords: ["playhouse", "遊樂場", "親子", "兒童", "室內"]
+    enabled: true
+
+  - name: "Bing News Indoor Playground HK"
+    type: rss
+    url: "https://www.bing.com/news/search?q=indoor+playground+Hong+Kong&format=rss"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "pubDate"
+      summary: "description"
+    recency_window_days: 7
+    category_keywords: ["playhouse", "playroom", "indoor", "kids", "children"]
+    enabled: true
+
+  - name: "Bing News 親子好去處"
+    type: rss
+    url: "https://www.bing.com/news/search?q=%E8%A6%AA%E5%AD%90%E5%A5%BD%E5%8E%BB%E8%99%95+%E9%A6%99%E6%B8%AF&format=rss"
+    selectors:
+      title: "title"
+      link: "link"
+      published: "pubDate"
+      summary: "description"
+    recency_window_days: 7
+    category_keywords: ["playhouse", "遊樂場", "親子", "好去處", "放電"]
+    enabled: true
+
 # 低成本驗證（不用 LLM）
 validation:
   http_timeout: 10
