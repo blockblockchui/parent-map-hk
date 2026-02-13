@@ -138,15 +138,6 @@
                     </button>
                 </div>
                 
-                <!-- 快速篩選標籤 -->
-                <div class="mt-4 flex flex-wrap justify-center gap-2 px-2">
-                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="indoor">🏠 室內</button>
-                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="free">🆓 免費</button>
-                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="playhouse">🎪 遊樂場</button>
-                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="park">🌳 公園</button>
-                    <button class="quick-filter px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-full text-sm whitespace-nowrap" data-filter="museum">🏛️ 博物館</button>
-                </div>
-                
                 <!-- 🎯 推薦場景入口 -->
                 <div class="mt-6 flex flex-wrap justify-center gap-2 px-2">
                     <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="rainy">
@@ -938,21 +929,6 @@
         searchBtn.addEventListener('click', handleSearch);
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleSearch();
-        });
-        
-        // 快速篩選
-        document.querySelectorAll('.quick-filter').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const filter = btn.dataset.filter;
-                if (filter === 'indoor') {
-                    document.getElementById('indoorFilter').value = 'indoor';
-                } else if (filter === 'free') {
-                    document.getElementById('priceFilter').value = '0-100';
-                } else {
-                    document.getElementById('categoryFilter').value = filter;
-                }
-                renderLocations();
-            });
         });
         
         // 渲染搜尋結果（復用 renderLocations 嘅邏輯）
