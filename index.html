@@ -211,21 +211,28 @@
 
     <!-- Results -->
     <div class="max-w-7xl mx-auto px-4 py-6">
-        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <h2 class="text-lg font-semibold">📍 地點列表</h2>
-            <div class="flex items-center gap-2">
-                <!-- 排序方式 -->
-                <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
-                    <option value="updated">📅 排序：最近更新</option>
-                    <option value="default">📍 排序：距離最近</option>
-                    <option value="price-asc">💰 排序：價格低→高</option>
-                    <option value="price-desc">💰 排序：價格高→低</option>
-                </select>
-                <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
+        <!-- Sticky Header -->
+        <div id="listHeader" class="sticky top-0 z-40 bg-gray-50/95 backdrop-blur-sm py-3 -mx-4 px-4 border-b border-gray-200/50 transition-shadow">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <h2 class="text-lg font-semibold">📍 地點列表</h2>
+                    <!-- Active scenario buttons will appear here -->
+                    <div id="activeScenarios" class="flex items-center gap-1"></div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <!-- 排序方式 -->
+                    <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
+                        <option value="updated">📅 排序：最近更新</option>
+                        <option value="default">📍 排序：距離最近</option>
+                        <option value="price-asc">💰 排序：價格低→高</option>
+                        <option value="price-desc">💰 排序：價格高→低</option>
+                    </select>
+                    <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
+                </div>
             </div>
         </div>
         
-        <div id="locationList" class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
+        <div id="locationList" class="columns-1 md:columns-2 lg:columns-4 gap-6 space-y-6 pt-4">
             <!-- Locations will be inserted here -->
         </div>
     </div>
@@ -1090,6 +1097,35 @@
             document.getElementById('sortFilter').value = 'updated';
         }
 
+        // 顯示當前生效的場景
+        function updateActiveScenario(scenario) {
+            const container = document.getElementById('activeScenarios');
+            const scenarioLabels = {
+                'rainy': '🌧️ 雨天好去處',
+                'baby': '👶 2歲以下適合',
+                'birthday': '🎂 生日會場地',
+                'mtr': '🚇 近港鐵站'
+            };
+            
+            if (scenario && scenarioLabels[scenario]) {
+                container.innerHTML = `
+                    <button onclick="clearScenario()" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium hover:bg-blue-200 transition-colors flex items-center gap-1">
+                        ${scenarioLabels[scenario]}
+                        <span class="text-blue-500">✕</span>
+                    </button>
+                `;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+        
+        // 清除場景篩選
+        window.clearScenario = function() {
+            setDefaultFilters();
+            updateActiveScenario(null);
+            renderLocations();
+        };
+        
         // 推薦場景按鈕事件
         document.querySelectorAll('.scenario-btn').forEach(btn => {
             btn.addEventListener('click', function() {
@@ -1127,11 +1163,24 @@
                         break;
                 }
                 
+                // 更新標題列顯示
+                updateActiveScenario(scenario);
+                
                 renderLocations();
                 
                 // 滾動到結果區
                 document.getElementById('locationList').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
+        });
+        
+        // Sticky header shadow effect on scroll
+        window.addEventListener('scroll', function() {
+            const header = document.getElementById('listHeader');
+            if (window.scrollY > 100) {
+                header.classList.add('shadow-md');
+            } else {
+                header.classList.remove('shadow-md');
+            }
         });
 
         // 設置默認篩選並渲染
