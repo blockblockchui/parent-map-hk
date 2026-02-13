@@ -653,14 +653,32 @@
                 
                 const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
                 
+                // Check if place has local image
+                const hasImage = l.images?.local || l.images?.cloudinary;
+                const imageUrl = l.images?.local || l.images?.cloudinary;
+                
                 return `
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 break-inside-avoid mb-6">
+                    ${hasImage ? `
+                    <div class="relative overflow-hidden" style="min-height: 160px;">
+                        <img src="${imageUrl}" alt="${l.name}" 
+                            class="w-full h-40 object-cover transition-transform duration-300 hover:scale-105"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="bg-gradient-to-br ${catStyle.bg} items-center justify-center relative hidden" style="min-height: 160px; display: none;">
+                            <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                                <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : `
                     <div class="bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative" style="min-height: 160px;">
                         <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
                         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
                             <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
                         </div>
                     </div>
+                    `}
                     <div class="p-4">
                         <div class="flex items-start justify-between">
                             <div class="flex flex-wrap gap-1">
@@ -849,14 +867,32 @@
             listEl.innerHTML = searchResults.map(l => {
                 const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
                 
+                // Check if place has local image
+                const hasImage = l.images?.local || l.images?.cloudinary;
+                const imageUrl = l.images?.local || l.images?.cloudinary;
+                
                 return `
                 <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 break-inside-avoid mb-6">
+                    ${hasImage ? `
+                    <div class="relative overflow-hidden" style="min-height: 160px;">
+                        <img src="${imageUrl}" alt="${l.name}" 
+                            class="w-full h-40 object-cover transition-transform duration-300 hover:scale-105"
+                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                        <div class="bg-gradient-to-br ${catStyle.bg} items-center justify-center relative hidden" style="min-height: 160px; display: none;">
+                            <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
+                            <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                                <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : `
                     <div class="bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative" style="min-height: 160px;">
                         <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
                         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
                             <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
                         </div>
                     </div>
+                    `}
                     <div class="p-4">
                         <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
                             ${categoryLabels[l.category]}
