@@ -33,6 +33,93 @@
         .columns-1 > *, .columns-2 > *, .columns-3 > * {
             margin-bottom: 1.5rem;
         }
+        
+        /* List View Layout */
+        .list-view {
+            columns: 1 !important;
+        }
+        
+        .list-view .location-card {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: stretch;
+            margin-bottom: 0.75rem;
+        }
+        
+        .list-view .card-image-wrapper {
+            width: 120px;
+            min-width: 120px;
+            height: 100px;
+            flex-shrink: 0;
+        }
+        
+        .list-view .card-image-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 0.5rem 0 0 0.5rem;
+        }
+        
+        .list-view .card-content {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .list-view .card-main {
+            flex: 1;
+        }
+        
+        .list-view .card-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: auto;
+            padding-left: 1rem;
+            border-left: 1px solid #e5e7eb;
+        }
+        
+        .list-view .card-title {
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .list-view .card-meta {
+            font-size: 0.75rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .list-view .card-tags {
+            margin-bottom: 0.25rem;
+        }
+        
+        .list-view .card-desc {
+            display: none;
+        }
+        
+        @media (max-width: 640px) {
+            .list-view .location-card {
+                flex-direction: row;
+            }
+            
+            .list-view .card-image-wrapper {
+                width: 100px;
+                min-width: 100px;
+                height: 90px;
+            }
+            
+            .list-view .card-actions {
+                flex-direction: column;
+                padding-left: 0.5rem;
+            }
+            
+            .list-view .card-actions a {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -228,6 +315,10 @@
                         <option value="price-asc">💰 排序：價格低→高</option>
                         <option value="price-desc">💰 排序：價格高→低</option>
                     </select>
+                    <!-- 佈局切換 -->
+                    <button id="layoutToggle" class="px-3 py-2 border rounded-lg text-sm bg-white border-gray-300 hover:bg-gray-50 transition-colors" title="切換佈局">
+                        ⊞ 格狀
+                    </button>
                     <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
                 </div>
             </div>
@@ -323,6 +414,9 @@
         // Favorites state
         let favorites = JSON.parse(localStorage.getItem('parentMapFavorites') || '[]');
         let showFavoritesOnly = false;
+        
+        // Layout state (grid or list)
+        let isListView = localStorage.getItem('parentMapLayout') === 'list';
 
         // Update favorites count and button style
         function updateFavoritesUI() {
@@ -642,6 +736,7 @@
                 library: { icon: '📚', bg: 'from-violet-400 to-purple-500' }
             };
             
+            // Render cards based on layout mode
             listEl.innerHTML = filtered.map(l => {
                 // 計算距離（如果用戶已定位，一律顯示）
                 let distanceHtml = '';
@@ -657,80 +752,134 @@
                 const hasImage = l.images?.local || l.images?.cloudinary;
                 const imageUrl = l.images?.local || l.images?.cloudinary;
                 
-                return `
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 break-inside-avoid mb-6">
-                    ${hasImage ? `
-                    <div class="relative overflow-hidden" style="min-height: 160px;">
-                        <img src="${imageUrl}" alt="${l.name}" 
-                            class="w-full h-40 object-cover transition-transform duration-300 hover:scale-105"
-                            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="bg-gradient-to-br ${catStyle.bg} items-center justify-center relative hidden" style="min-height: 160px; display: none;">
+                // Common elements
+                const tagsHtml = `
+                    <div class="flex flex-wrap gap-2 mb-3${isListView ? ' card-tags' : ''}">
+                        ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : ''}
+                        ${l.rainyDaySuitable ? '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">☂️雨天適合</span>' : ''}
+                        ${l.hasBabyRoom ? '<span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">👶哺乳室</span>' : ''}
+                        ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
+                    </div>
+                `;
+                
+                const agePriceHtml = `
+                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                        <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">${l.ageRange[0]}-${l.ageRange[1]}歲</span>
+                        <span class="text-xs font-medium ${l.priceType === 'free' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded">${getPriceSymbol(l.priceType)}</span>
+                        ${l.updatedAt ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">🕐 ${formatLastUpdated(l.updatedAt)}</span>` : '<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">🕐 2026年2月更新</span>'}
+                    </div>
+                `;
+                
+                const actionsHtml = `
+                    ${l.phone ? `<a href="tel:${l.phone}" class="py-2 text-sm text-gray-700 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors">📞 電話</a>` : ''}
+                    <a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener noreferrer" class="py-2 text-sm text-green-700 bg-green-50 rounded text-center hover:bg-green-100 transition-colors">🗺️ 路線</a>
+                    ${l.website ? `<a href="${l.website}" target="_blank" rel="noopener noreferrer" class="py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">🌐 網站</a>` : ''}
+                `;
+                
+                if (isListView) {
+                    // List view layout
+                    const imageSection = hasImage ? `
+                        <div class="card-image-wrapper">
+                            <img src="${imageUrl}" alt="${l.name}" 
+                                class="w-full h-full object-cover"
+                                onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'bg-gradient-to-br ${catStyle.bg} w-full h-full flex items-center justify-center\\'><span class=\\'text-white text-3xl\\'>${catStyle.icon}</span></div>';">
+                        </div>
+                    ` : `
+                        <div class="card-image-wrapper bg-gradient-to-br ${catStyle.bg} flex items-center justify-center">
+                            <span class="text-white text-3xl">${catStyle.icon}</span>
+                        </div>
+                    `;
+                    
+                    return `
+                    <div class="location-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300">
+                        ${imageSection}
+                        <div class="card-content">
+                            <div class="card-main">
+                                <div class="flex items-start justify-between mb-1">
+                                    <div class="flex flex-wrap gap-1">
+                                        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">${categoryLabels[l.category]}</span>
+                                        ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
+                                        ${distanceHtml}
+                                    </div>
+                                </div>
+                                <h3 class="card-title font-bold text-gray-900">${l.name}</h3>
+                                ${l.nameEn ? `<p class="text-xs text-gray-500 mb-1">${l.nameEn}</p>` : ''}
+                                <div class="card-meta flex items-center gap-1 text-sm text-gray-600">
+                                    <span>📍</span>
+                                    <span>${regionLabels[l.region]} · ${l.district}</span>
+                                </div>
+                                ${tagsHtml}
+                                ${agePriceHtml}
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            ${actionsHtml}
+                            <button onclick="toggleFavorite('${l.id}')" class="text-2xl hover:scale-110 transition-transform px-2" title="${isFavorite(l.id) ? '取消收藏' : '加入收藏'}">
+                                ${isFavorite(l.id) ? '❤️' : '🤍'}
+                            </button>
+                        </div>
+                    </div>
+                    `;
+                } else {
+                    // Grid view layout (original)
+                    return `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 break-inside-avoid mb-6">
+                        ${hasImage ? `
+                        <div class="relative overflow-hidden" style="min-height: 160px;">
+                            <img src="${imageUrl}" alt="${l.name}" 
+                                class="w-full h-40 object-cover transition-transform duration-300 hover:scale-105"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                            <div class="bg-gradient-to-br ${catStyle.bg} items-center justify-center relative hidden" style="min-height: 160px; display: none;">
+                                <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
+                                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
+                                    <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
+                                </div>
+                            </div>
+                        </div>
+                        ` : `
+                        <div class="bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative" style="min-height: 160px;">
                             <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
                             <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
                                 <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
                             </div>
                         </div>
-                    </div>
-                    ` : `
-                    <div class="bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative" style="min-height: 160px;">
-                        <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
-                        <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
-                            <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
-                        </div>
-                    </div>
-                    `}
-                    <div class="p-4">
-                        <div class="flex items-start justify-between">
-                            <div class="flex flex-wrap gap-1">
-                                <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">
-                                    ${categoryLabels[l.category]}
-                                </span>
-                                ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
-                                ${distanceHtml}
+                        `}
+                        <div class="p-4">
+                            <div class="flex items-start justify-between">
+                                <div class="flex flex-wrap gap-1">
+                                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">${categoryLabels[l.category]}</span>
+                                    ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
+                                    ${distanceHtml}
+                                </div>
+                                <button onclick="toggleFavorite('${l.id}')" class="text-2xl hover:scale-110 transition-transform" title="${isFavorite(l.id) ? '取消收藏' : '加入收藏'}">
+                                    ${isFavorite(l.id) ? '❤️' : '🤍'}
+                                </button>
                             </div>
-                            <button onclick="toggleFavorite('${l.id}')" class="text-2xl hover:scale-110 transition-transform" title="${isFavorite(l.id) ? '取消收藏' : '加入收藏'}">
-                                ${isFavorite(l.id) ? '❤️' : '🤍'}
-                            </button>
-                        </div>
-                        <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
-                        ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
-                        
-                        <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
-                            <span>📍</span>
-                            <span>${regionLabels[l.region]} · ${l.district}</span>
-                        </div>
+                            <h3 class="text-lg font-bold text-gray-900 mt-1">${l.name}</h3>
+                            ${l.nameEn ? `<p class="text-xs text-gray-500">${l.nameEn}</p>` : ''}
+                            
+                            <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
+                                <span>📍</span>
+                                <span>${regionLabels[l.region]} · ${l.district}</span>
+                            </div>
 
-                        <div class="flex flex-wrap gap-2 mb-3">
-                            ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : ''}
-                            ${l.rainyDaySuitable ? '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">☂️雨天適合</span>' : ''}
-                            ${l.hasBabyRoom ? '<span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">👶哺乳室</span>' : ''}
-                            ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
-                        </div>
+                            ${tagsHtml}
+                            ${agePriceHtml}
 
-                        <!-- 🎯 信任元素：年齡 + 價格 + 更新日期 -->
-                        <div class="flex items-center gap-2 mb-2 flex-wrap">
-                            <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">${l.ageRange[0]}-${l.ageRange[1]}歲</span>
-                            <span class="text-xs font-medium ${l.priceType === 'free' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded">${getPriceSymbol(l.priceType)}</span>
-                            ${l.updatedAt ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">🕐 ${formatLastUpdated(l.updatedAt)}</span>` : '<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">🕐 2026年2月更新</span>'}
-                        </div>
+                            <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description.substring(0, 80)}${l.description.length > 80 ? '...' : ''}</p>
 
-                        <!-- 🎯 80字摘要 -->
-                        <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description.substring(0, 80)}${l.description.length > 80 ? '...' : ''}</p>
+                            <div class="flex items-start gap-2 text-xs text-gray-500 mb-3">
+                                <span class="mt-0.5">🕐</span>
+                                <span class="whitespace-pre-line">${l.openingHours.replace(/\\n/g, '\n')}</span>
+                            </div>
 
-                        <!-- 🎯 開放時間（支援多行顯示） -->
-                        <div class="flex items-start gap-2 text-xs text-gray-500 mb-3">
-                            <span class="mt-0.5">🕐</span>
-                            <span class="whitespace-pre-line">${l.openingHours.replace(/\\n/g, '\n')}</span>
-                        </div>
-
-                        <div class="flex gap-2 pt-3 border-t">
-                            ${l.phone ? `<a href="tel:${l.phone}" class="flex-1 py-2 text-sm text-gray-700 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors">📞 電話</a>` : ''}
-                            <a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-green-700 bg-green-50 rounded text-center hover:bg-green-100 transition-colors">🗺️ 路線</a>
-                            ${l.website ? `<a href="${l.website}" target="_blank" rel="noopener noreferrer" class="flex-1 py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">🌐 網站</a>` : ''}
+                            <div class="flex gap-2 pt-3 border-t">
+                                ${actionsHtml}
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
+                    `;
+                }
             }).join('');
 
             // Update map markers
@@ -1052,6 +1201,40 @@
         document.getElementById('dayFilter').addEventListener('change', renderLocations);
         document.getElementById('timeFilter').addEventListener('change', renderLocations);
         document.getElementById('sortFilter').addEventListener('change', renderLocations);
+        
+        // Layout toggle button
+        const layoutToggleBtn = document.getElementById('layoutToggle');
+        if (layoutToggleBtn) {
+            // Set initial state
+            updateLayoutButton();
+            applyLayoutClass();
+            
+            layoutToggleBtn.addEventListener('click', function() {
+                isListView = !isListView;
+                localStorage.setItem('parentMapLayout', isListView ? 'list' : 'grid');
+                updateLayoutButton();
+                applyLayoutClass();
+                renderLocations();
+            });
+        }
+        
+        function updateLayoutButton() {
+            if (layoutToggleBtn) {
+                layoutToggleBtn.innerHTML = isListView ? '☰ 列表' : '⊞ 格狀';
+                layoutToggleBtn.title = isListView ? '切換至格狀佈局' : '切換至列表佈局';
+            }
+        }
+        
+        function applyLayoutClass() {
+            const listEl = document.getElementById('locationList');
+            if (isListView) {
+                listEl.classList.remove('columns-1', 'md:columns-2', 'lg:columns-4', 'gap-6', 'space-y-6');
+                listEl.classList.add('list-view', 'space-y-3');
+            } else {
+                listEl.classList.remove('list-view', 'space-y-3');
+                listEl.classList.add('columns-1', 'md:columns-2', 'lg:columns-4', 'gap-6', 'space-y-6');
+            }
+        }
         
         // Favorites filter button
         const favoritesFilterBtn = document.getElementById('favoritesFilter');
