@@ -1,0 +1,45 @@
+# Cloudinary Configuration for Parent Map HK
+# 
+# Setup Instructions:
+# 1. Sign up at https://cloudinary.com (free tier: 25GB storage/bandwidth)
+# 2. Get your cloud name from dashboard
+# 3. Add to .env file:
+#    CLOUDINARY_CLOUD_NAME=your_cloud_name
+#    CLOUDINARY_API_KEY=your_api_key
+#    CLOUDINARY_API_SECRET=your_api_secret
+#
+# Usage:
+# - Frontend: Use cloudinary URL with transformations
+# - Backend: Use SDK to upload/fetch images
+
+cloud_name: parent-map-hk
+# Base URL format: https://res.cloudinary.com/{cloud_name}/image/upload/{path}
+
+# Image transformation presets
+presets:
+  thumbnail:
+    width: 400
+    height: 300
+    crop: fill
+    quality: auto
+    format: auto  # auto-convert to WebP/AVIF
+  
+  card:
+    width: 600
+    height: 400
+    crop: fill
+    quality: auto:good
+    format: auto
+  
+  hero:
+    width: 1200
+    height: 600
+    crop: fill
+    quality: auto:best
+    format: auto
+
+# Fallback chain
+fallback_chain:
+  - local_image
+  - cloudinary_cached
+  - placeholder_gradient
