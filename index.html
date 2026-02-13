@@ -141,13 +141,13 @@
                 <!-- 🎯 推薦場景入口 -->
                 <div class="mt-6 flex flex-wrap justify-center gap-2 px-2">
                     <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="rainy">
-                        🌧️ 雨天好去處
+                        🌧️ 唔怕落雨
                     </button>
                     <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="baby">
-                        🧒 2歲以下適合
+                        🧒 2歲以下
                     </button>
                     <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="birthday">
-                        🎂 可辦生日會
+                        🎂 生日會場地
                     </button>
                 </div>
             </div>
@@ -160,7 +160,7 @@
             <div class="flex flex-wrap gap-3">
                 <!-- 地區篩選（香港十八區） -->
                 <select id="regionFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">所有地區</option>
+                    <option value="all">不限地區</option>
                     <optgroup label="港島">
                         <option value="中西區">中西區</option>
                         <option value="灣仔">灣仔</option>
@@ -189,7 +189,7 @@
 
                 <!-- 類別篩選 -->
                 <select id="categoryFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">所有類型</option>
+                    <option value="all">不限類型</option>
                     <option value="playhouse">🎪 遊樂場</option>
                     <option value="park">🌳 公園</option>
                     <option value="museum">🏛️ 博物館/展覽</option>
@@ -197,8 +197,9 @@
 
                 <!-- 人均消費 -->
                 <select id="priceFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">任何消費</option>
-                    <option value="0-100">$0-100</option>
+                    <option value="all">不限消費</option>
+                    <option value="free">🆓 免費</option>
+                    <option value="1-100">$1-100</option>
                     <option value="100-200">$100-200</option>
                     <option value="200-400">$200-400</option>
                     <option value="400+">$400+</option>
@@ -206,7 +207,7 @@
 
                 <!-- 適合年齡 -->
                 <select id="ageFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">任何年齡</option>
+                    <option value="all">不限年齡</option>
                     <option value="0-1">0-1歲</option>
                     <option value="1-2">1-2歲</option>
                     <option value="2-3">2-3歲</option>
@@ -217,14 +218,14 @@
 
                 <!-- 室內/室外 -->
                 <select id="indoorFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">室內/室外</option>
+                    <option value="all">不限</option>
                     <option value="indoor">🏠 室內</option>
                     <option value="outdoor">☀️ 室外</option>
                 </select>
 
                 <!-- 距離篩選（需要定位） -->
                 <select id="distanceFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">任何距離</option>
+                    <option value="all">不限距離</option>
                     <option value="400">📍 400米內</option>
                     <option value="800">📍 800米內</option>
                     <option value="1000">📍 1公里內</option>
@@ -232,9 +233,9 @@
                     <option value="5000">📍 5公里內</option>
                 </select>
 
-                <!-- 我的收藏 -->
+                <!-- 收藏地點 -->
                 <button id="favoritesFilter" class="px-3 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50">
-                    ❤️ 我的收藏 (<span id="favCount">0</span>)
+                    ❤️ 收藏地點 (<span id="favCount">0</span>)
                 </button>
                 
                 <!-- 清空收藏 -->
@@ -270,10 +271,7 @@
         <div id="listHeader" class="sticky top-0 z-40 bg-gray-50/95 backdrop-blur-sm py-3 -mx-4 px-4 border-b border-gray-200/50 transition-shadow">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-3 flex-wrap">
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-lg font-semibold">地點列表</h2>
-                        <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
-                    </div>
+                    <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
                     <!-- Active scenario buttons will appear here -->
                     <div id="activeScenarios" class="flex items-center gap-1"></div>
                 </div>
@@ -598,13 +596,17 @@
                 
                 // 消費篩選
                 if (price !== 'all') {
-                    const priceMap = {
-                        '0-100': ['free', 'low'],
-                        '100-200': ['medium'],
-                        '200-400': ['high'],
-                        '400+': ['high']
-                    };
-                    if (!priceMap[price].includes(l.priceType)) return false;
+                    if (price === 'free') {
+                        if (l.priceType !== 'free') return false;
+                    } else {
+                        const priceMap = {
+                            '1-100': ['low'],
+                            '100-200': ['medium'],
+                            '200-400': ['high'],
+                            '400+': ['high']
+                        };
+                        if (!priceMap[price].includes(l.priceType)) return false;
+                    }
                 }
                 
                 // 室內/室外篩選
@@ -668,7 +670,7 @@
             let countText = '';
             
             if (showFavoritesOnly) {
-                countText = `我的收藏: ${filtered.length} 個好去處`;
+                countText = `收藏地點: ${filtered.length} 個好去處`;
             } else if (filtered.length === 0) {
                 countText = `暫時找不到符合條件的地點`;
             } else {
@@ -1259,8 +1261,8 @@
         function updateActiveScenario(scenario) {
             const container = document.getElementById('activeScenarios');
             const scenarioLabels = {
-                'rainy': '🌧️ 雨天好去處',
-                'baby': '👶 2歲以下適合',
+                'rainy': '🌧️ 唔怕落雨',
+                'baby': '🧒 2歲以下',
                 'birthday': '🎂 生日會場地'
             };
             
