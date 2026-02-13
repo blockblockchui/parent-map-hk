@@ -357,7 +357,18 @@
         };
 
         // Initialize Leaflet map FIRST
-        const map = L.map('map').setView([22.32, 114.17], 11);
+        // 限制地圖範圍在香港附近，避免用戶迷失
+        const hongKongBounds = L.latLngBounds(
+            [22.15, 113.75], // 西南角
+            [22.55, 114.45]  // 東北角
+        );
+        
+        const map = L.map('map', {
+            center: [22.32, 114.17],
+            zoom: 11,
+            maxBounds: hongKongBounds,
+            maxBoundsViscosity: 0.8  // 彈性邊界，用戶可以稍微拖動但會彈回
+        });
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
