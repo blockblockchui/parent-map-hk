@@ -158,9 +158,6 @@
                     <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="birthday">
                         🎂 可辦生日會
                     </button>
-                    <button class="scenario-btn px-4 py-2 bg-white/90 text-blue-700 rounded-full text-sm font-medium hover:bg-white transition-colors shadow-sm" data-scenario="mtr">
-                        🚇 近地鐵
-                    </button>
                 </div>
             </div>
         </div>
@@ -588,8 +585,6 @@
             const price = document.getElementById('priceFilter').value;
             const indoor = document.getElementById('indoorFilter').value;
             const distance = document.getElementById('distanceFilter').value;
-            const day = document.getElementById('dayFilter').value;
-            const time = document.getElementById('timeFilter').value;
 
             let filtered = locations.filter(l => {
                 // 地區篩選（十八區）
@@ -627,12 +622,6 @@
                 
                 // 我的收藏篩選
                 if (showFavoritesOnly && !favorites.includes(l.id)) return false;
-                
-                // 開放日篩選
-                if (day !== 'all' && !checkOpenDay(l.openingHours, day)) return false;
-                
-                // 開放時間篩選
-                if (time !== 'all' && !checkOpenTime(l.openingHours, time)) return false;
                 
                 return true;
             });
@@ -908,7 +897,7 @@
 
         // Event listeners for all filters
         const filterIds = ['regionFilter', 'categoryFilter', 'ageFilter', 'priceFilter', 
-                          'indoorFilter', 'distanceFilter', 'dayFilter', 'timeFilter', 'sortFilter'];
+                          'indoorFilter', 'distanceFilter', 'sortFilter'];
         filterIds.forEach(id => {
             const el = document.getElementById(id);
             if (el) {
@@ -963,8 +952,6 @@
                     document.getElementById('categoryFilter').value = filter;
                 }
                 renderLocations();
-                // Scroll to results
-                document.getElementById('map').scrollIntoView({ behavior: 'smooth' });
             });
         });
         
@@ -1177,8 +1164,6 @@
         document.getElementById('ageFilter').addEventListener('change', renderLocations);
         document.getElementById('priceFilter').addEventListener('change', renderLocations);
         document.getElementById('indoorFilter').addEventListener('change', renderLocations);
-        document.getElementById('dayFilter').addEventListener('change', renderLocations);
-        document.getElementById('timeFilter').addEventListener('change', renderLocations);
         document.getElementById('sortFilter').addEventListener('change', renderLocations);
         
         // Layout toggle button
@@ -1291,8 +1276,6 @@
             document.getElementById('priceFilter').value = 'all';
             document.getElementById('indoorFilter').value = 'all';
             document.getElementById('distanceFilter').value = 'all';
-            document.getElementById('dayFilter').value = 'all';
-            document.getElementById('timeFilter').value = 'all';
             document.getElementById('sortFilter').value = 'updated';
         }
 
@@ -1302,8 +1285,7 @@
             const scenarioLabels = {
                 'rainy': '🌧️ 雨天好去處',
                 'baby': '👶 2歲以下適合',
-                'birthday': '🎂 生日會場地',
-                'mtr': '🚇 近港鐵站'
+                'birthday': '🎂 生日會場地'
             };
             
             if (scenario && scenarioLabels[scenario]) {
@@ -1351,24 +1333,12 @@
                         document.getElementById('indoorFilter').value = 'indoor';
                         document.getElementById('ageFilter').value = '3-6';
                         break;
-                    case 'mtr':
-                        // 近地鐵需要定位
-                        if (!userLocation) {
-                            alert('請先點擊「📍 定位我」以查找附近地鐵站');
-                            document.getElementById('distanceFilter').value = '800';
-                        } else {
-                            document.getElementById('distanceFilter').value = '800';
-                        }
-                        break;
                 }
                 
                 // 更新標題列顯示
                 updateActiveScenario(scenario);
                 
                 renderLocations();
-                
-                // 滾動到結果區
-                document.getElementById('locationList').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
         
