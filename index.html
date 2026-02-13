@@ -77,8 +77,7 @@
             align-items: center;
             gap: 0.5rem;
             margin-left: auto;
-            padding-left: 1rem;
-            border-left: 1px solid #e5e7eb;
+            padding-left: 0.5rem;
         }
         
         .list-view .card-title {
@@ -131,10 +130,10 @@
                 <p class="text-base sm:text-lg md:text-xl text-blue-100 mb-6">發掘全港最適合親子活動的好去處</p>
                 
                 <!-- 快速搜尋 -->
-                <div class="max-w-2xl mx-auto flex flex-col sm:flex-row gap-2">
-                    <input type="text" id="searchInput" placeholder="🔍 搜尋地點名稱、地區或類型..." 
-                           class="flex-1 px-4 py-3 rounded-lg text-gray-900 text-base focus:outline-none focus:ring-4 focus:ring-blue-300">
-                    <button id="searchBtn" class="px-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-300 transition-colors whitespace-nowrap">
+                <div class="max-w-2xl mx-auto flex gap-2 px-4 sm:px-0">
+                    <input type="text" id="searchInput" placeholder="🔍 搜尋地點..." 
+                           class="flex-1 min-w-0 px-4 py-3 rounded-lg text-gray-900 text-base focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    <button id="searchBtn" class="px-4 sm:px-6 py-3 bg-yellow-400 text-gray-900 font-bold rounded-lg hover:bg-yellow-300 transition-colors whitespace-nowrap">
                         搜尋
                     </button>
                 </div>
@@ -313,10 +312,10 @@
                 <div class="flex items-center gap-2">
                     <!-- 排序方式 -->
                     <select id="sortFilter" class="px-3 py-2 border rounded-lg text-sm bg-blue-50 border-blue-200">
-                        <option value="updated">📅 排序：最近更新</option>
-                        <option value="default">📍 排序：距離最近</option>
-                        <option value="price-asc">💰 排序：價格低→高</option>
-                        <option value="price-desc">💰 排序：價格高→低</option>
+                        <option value="updated">📅 按更新日期</option>
+                        <option value="default">📍 距離近→遠</option>
+                        <option value="price-asc">💰 價格低→高</option>
+                        <option value="price-desc">💰 價格高→低</option>
                     </select>
                     <!-- 佈局切換 -->
                     <button id="layoutToggle" class="px-3 py-2 border rounded-lg text-sm bg-white border-gray-300 hover:bg-gray-50 transition-colors" title="切換佈局">
@@ -769,8 +768,7 @@
                 // Common elements
                 const tagsHtml = `
                     <div class="flex flex-wrap gap-2 mb-3${isListView ? ' card-tags' : ''}">
-                        ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : ''}
-                        ${l.rainyDaySuitable ? '<span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">☂️雨天適合</span>' : ''}
+                        ${l.indoor ? '<span class="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded">室內</span>' : '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">戶外</span>'}
                         ${l.hasBabyRoom ? '<span class="text-xs bg-pink-100 text-pink-700 px-2 py-1 rounded">👶哺乳室</span>' : ''}
                         ${l.hasRestaurant ? '<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">🍴有餐廳</span>' : ''}
                     </div>
@@ -780,14 +778,17 @@
                     <div class="flex items-center gap-2 mb-2 flex-wrap">
                         <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">${l.ageRange[0]}-${l.ageRange[1]}歲</span>
                         <span class="text-xs font-medium ${l.priceType === 'free' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded">${getPriceSymbol(l.priceType)}</span>
-                        ${l.updatedAt ? `<span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">🕐 ${formatLastUpdated(l.updatedAt)}</span>` : '<span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">🕐 2026年2月更新</span>'}
                     </div>
                 `;
+                
+                // Determine website URL (priority: website > facebook > instagram)
+                const websiteUrl = l.website || l.facebook_url || l.instagram_url;
+                const websiteLabel = l.website ? '🌐 網站' : (l.facebook_url ? '📘 Facebook' : '📷 Instagram');
                 
                 const actionsHtml = `
                     ${l.phone ? `<a href="tel:${l.phone}" class="py-2 text-sm text-gray-700 bg-gray-100 rounded text-center hover:bg-gray-200 transition-colors">📞 電話</a>` : ''}
                     <a href="https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lng}" target="_blank" rel="noopener noreferrer" class="py-2 text-sm text-green-700 bg-green-50 rounded text-center hover:bg-green-100 transition-colors">🗺️ 路線</a>
-                    ${l.website ? `<a href="${l.website}" target="_blank" rel="noopener noreferrer" class="py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">🌐 網站</a>` : ''}
+                    ${websiteUrl ? `<a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" class="py-2 text-sm text-blue-700 bg-blue-50 rounded text-center hover:bg-blue-100 transition-colors">${websiteLabel}</a>` : ''}
                 `;
                 
                 if (isListView) {
@@ -809,21 +810,23 @@
                         ${imageSection}
                         <div class="card-content">
                             <div class="card-main">
-                                <div class="flex items-start justify-between mb-1">
-                                    <div class="flex flex-wrap gap-1">
-                                        <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">${categoryLabels[l.category]}</span>
-                                        ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
-                                        ${distanceHtml}
-                                        ${walkingTimeHtml}
-                                    </div>
+                                <!-- 第一行：類型 + 名稱 -->
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">${categoryLabels[l.category]}</span>
+                                    <h3 class="card-title font-bold text-gray-900">${l.name}</h3>
                                 </div>
-                                <h3 class="card-title font-bold text-gray-900">${l.name}</h3>
-                                <div class="card-meta flex items-center gap-1 text-sm text-gray-600">
-                                    <span>📍</span>
-                                    <span>${l.district}</span>
+                                <!-- 第二行：地區 + 室內/室外 -->
+                                <div class="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                                    <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${l.district}</span>
+                                    <span class="text-xs">${l.indoor ? '🏠 室內' : '🌳 戶外'}</span>
+                                    ${distanceHtml}
+                                    ${walkingTimeHtml}
                                 </div>
-                                ${tagsHtml}
-                                ${agePriceHtml}
+                                <!-- 第三行：年齡 + 價格 -->
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">${l.ageRange[0]}-${l.ageRange[1]}歲</span>
+                                    <span class="text-xs font-medium ${l.priceType === 'free' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'} px-2 py-1 rounded">${getPriceSymbol(l.priceType)}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="card-actions">
@@ -862,7 +865,6 @@
                             <div class="flex items-start justify-between">
                                 <div class="flex flex-wrap gap-1">
                                     <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">${categoryLabels[l.category]}</span>
-                                    ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
                                     ${distanceHtml}
                                 </div>
                                 <button onclick="toggleFavorite('${l.id}')" class="text-2xl hover:scale-110 transition-transform" title="${isFavorite(l.id) ? '取消收藏' : '加入收藏'}">
@@ -874,7 +876,7 @@
                             
                             <div class="flex items-center gap-1 text-sm text-gray-600 my-2">
                                 <span>📍</span>
-                                <span>${regionLabels[l.region]} · ${l.district}</span>
+                                <span>${l.district}</span>
                             </div>
 
                             ${tagsHtml}
