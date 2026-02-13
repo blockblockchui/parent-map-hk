@@ -244,26 +244,6 @@
                     <option value="5000">📍 5公里內</option>
                 </select>
 
-                <!-- 開放日 -->
-                <select id="dayFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">任何日子</option>
-                    <option value="mon">星期一</option>
-                    <option value="tue">星期二</option>
-                    <option value="wed">星期三</option>
-                    <option value="thu">星期四</option>
-                    <option value="fri">星期五</option>
-                    <option value="sat">星期六</option>
-                    <option value="sun">星期日</option>
-                </select>
-
-                <!-- 開放時間 -->
-                <select id="timeFilter" class="px-3 py-2 border rounded-lg text-sm">
-                    <option value="all">任何時間</option>
-                    <option value="morning">☀️ 早上 (08:00-12:00)</option>
-                    <option value="afternoon">🌤️ 下午 (12:00-18:00)</option>
-                    <option value="evening">🌙 晚上 (18:00-22:00)</option>
-                </select>
-
                 <!-- 我的收藏 -->
                 <button id="favoritesFilter" class="px-3 py-2 bg-gray-100 text-gray-400 border border-gray-200 rounded-lg text-sm hover:bg-gray-200 transition-colors disabled:opacity-50">
                     ❤️ 我的收藏 (<span id="favCount">0</span>)
@@ -303,7 +283,7 @@
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-3 flex-wrap">
                     <div class="flex items-center gap-2">
-                        <h2 class="text-lg font-semibold">📍 地點列表</h2>
+                        <h2 class="text-lg font-semibold">地點列表</h2>
                         <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
                     </div>
                     <!-- Active scenario buttons will appear here -->
@@ -704,29 +684,15 @@
             const listEl = document.getElementById('locationList');
             const countEl = document.getElementById('resultCount');
             
-            // 🎯 顯示結果數量（更友好嘅文案）
+            // 顯示結果數量
             let countText = '';
-            const indoorText = indoor === 'indoor' ? '室內' : '';
-            const ageText = age !== 'all' ? document.getElementById('ageFilter').options[document.getElementById('ageFilter').selectedIndex].text.replace('歲', '') : '';
             
             if (showFavoritesOnly) {
-                countText = `❤️ 我的收藏: ${filtered.length} 個地點`;
+                countText = `我的收藏: ${filtered.length} 個好去處`;
             } else if (filtered.length === 0) {
-                countText = `😅 暫時找不到符合條件的地點，試下放寬篩選？`;
-            } else if (userLocation && distance !== 'all') {
-                const distanceText = distance >= 1000 ? `${distance/1000}公里` : `${distance}米`;
-                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText}${ageText}放電好去處（${distanceText}內）`;
-            } else if (sortValue === 'updated') {
-                countText = `📅 最近更新: 共 ${filtered.length} 個地點`;
-            } else if (day !== 'all' || time !== 'all') {
-                const dayNames = { 'mon': '周一', 'tue': '周二', 'wed': '周三', 'thu': '周四', 'fri': '周五', 'sat': '周六', 'sun': '周日' };
-                const timeNames = { 'morning': '早上', 'afternoon': '下午', 'evening': '晚上' };
-                const dayText = day !== 'all' ? dayNames[day] : '';
-                const timeText = time !== 'all' ? timeNames[time] : '';
-                countText = `🕐 ${dayText}${timeText}開放: ${filtered.length} 個地點`;
+                countText = `暫時找不到符合條件的地點`;
             } else {
-                // 🎯 Phase 1: 預設文案
-                countText = `🎯 為你推薦 ${filtered.length} 個${indoorText || '室內'}${ageText || '3-6歲'}放電好去處`;
+                countText = `找到 ${filtered.length} 個好去處`;
             }
             countEl.textContent = countText;
             countEl.className = 'text-sm text-gray-600 font-medium';
@@ -744,18 +710,16 @@
             listEl.innerHTML = filtered.map(l => {
                 // 計算距離（如果用戶已定位，一律顯示）
                 let distanceHtml = '';
-                let walkingTimeHtml = '';
                 if (userLocation) {
                     const dist = calculateDistance(userLocation.lat, userLocation.lng, l.lat, l.lng);
                     const distText = dist >= 1000 ? `${(dist/1000).toFixed(1)}公里` : `${Math.round(dist)}米`;
-                    distanceHtml = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">📏 ${distText}</span>`;
                     
                     // 計算步行時間 (1公里 = 12分鐘)
                     const walkingMinutes = Math.round((dist / 1000) * 12);
                     if (walkingMinutes <= 30) {
-                        walkingTimeHtml = `<span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">🚶 步行約${walkingMinutes}分鐘</span>`;
+                        distanceHtml = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">${distText} 🚶約${walkingMinutes}分鐘</span>`;
                     } else {
-                        walkingTimeHtml = `<span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">🚶 行路搞唔掂</span>`;
+                        distanceHtml = `<span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">${distText} 🚶遠左啲</span>`;
                     }
                 }
                 
@@ -820,7 +784,6 @@
                                     <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">${l.district}</span>
                                     <span class="text-xs">${l.indoor ? '🏠 室內' : '🌳 戶外'}</span>
                                     ${distanceHtml}
-                                    ${walkingTimeHtml}
                                 </div>
                                 <!-- 第三行：年齡 + 價格 -->
                                 <div class="flex items-center gap-2">
@@ -977,7 +940,7 @@
             // 更新列表
             const listEl = document.getElementById('locationList');
             const countEl = document.getElementById('resultCount');
-            countEl.textContent = `🔍 搜尋「${query}」找到 ${filtered.length} 個地點`;
+            countEl.textContent = `搜尋「${query}」找到 ${filtered.length} 個好去處`;
             
             // 渲染搜尋結果
             renderSearchResults(filtered);
