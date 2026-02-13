@@ -15,6 +15,23 @@
             #map { height: 400px; }
         }
         .leaflet-popup-content { font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* Masonry Layout Support */
+        .break-inside-avoid {
+            break-inside: avoid;
+            page-break-inside: avoid;
+            -webkit-column-break-inside: avoid;
+        }
+        
+        /* Better spacing for masonry */
+        .columns-1, .columns-2, .columns-3 {
+            column-gap: 1.5rem;
+        }
+        
+        /* Space-y doesn't work well with columns, use margin-bottom on cards instead */
+        .columns-1 > *, .columns-2 > *, .columns-3 > * {
+            margin-bottom: 1.5rem;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -208,7 +225,7 @@
             </div>
         </div>
         
-        <div id="locationList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="locationList" class="columns-1 md:columns-2 lg:columns-3 gap-6 space-y-6">
             <!-- Locations will be inserted here -->
         </div>
     </div>
@@ -241,7 +258,7 @@
                 console.error('❌ Error loading locations:', error);
                 document.getElementById('resultCount').textContent = '載入失敗，請刷新頁面';
                 document.getElementById('locationList').innerHTML = `
-                    <div class="col-span-full text-center py-8 text-red-600">
+                    <div class="text-center py-8 text-red-600 w-full">
                         <p>⚠️ 無法載入地點資料</p>
                         <p class="text-sm mt-2">${error.message}</p>
                         <button onclick="location.reload()" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">
@@ -629,9 +646,9 @@
                 const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
                 
                 return `
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div class="h-40 bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative">
-                        <span class="text-white text-5xl drop-shadow-lg">${catStyle.icon}</span>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 break-inside-avoid mb-6">
+                    <div class="bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative" style="min-height: 160px;">
+                        <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
                         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
                             <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
                         </div>
@@ -674,10 +691,10 @@
                         <!-- 🎯 80字摘要 -->
                         <p class="text-sm text-gray-600 line-clamp-2 mb-3">${l.description.substring(0, 80)}${l.description.length > 80 ? '...' : ''}</p>
 
-                        <!-- 🎯 開放時間（簡化顯示） -->
+                        <!-- 🎯 開放時間（支援多行顯示） -->
                         <div class="flex items-start gap-2 text-xs text-gray-500 mb-3">
-                            <span>🕐</span>
-                            <span class="line-clamp-1">${l.openingHours.split('\\n')[0]}</span>
+                            <span class="mt-0.5">🕐</span>
+                            <span class="whitespace-pre-line">${l.openingHours.replace(/\\n/g, '\n')}</span>
                         </div>
 
                         <div class="flex gap-2 pt-3 border-t">
@@ -803,7 +820,7 @@
             
             if (searchResults.length === 0) {
                 listEl.innerHTML = `
-                    <div class="col-span-full text-center py-12 text-gray-500">
+                    <div class="text-center py-12 text-gray-500 w-full">
                         <span class="text-4xl block mb-4">🔍</span>
                         <p>找不到符合條件的地點</p>
                         <p class="text-sm mt-2">試試其他關鍵字</p>
@@ -825,9 +842,9 @@
                 const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
                 
                 return `
-                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                    <div class="h-40 bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative">
-                        <span class="text-white text-5xl drop-shadow-lg">${catStyle.icon}</span>
+                <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 break-inside-avoid mb-6">
+                    <div class="bg-gradient-to-br ${catStyle.bg} flex items-center justify-center relative" style="min-height: 160px;">
+                        <span class="text-white text-5xl drop-shadow-lg py-8">${catStyle.icon}</span>
                         <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-3">
                             <span class="text-white text-sm font-medium">${categoryLabels[l.category]}</span>
                         </div>
