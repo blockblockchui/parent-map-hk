@@ -77,6 +77,8 @@ for record in records:
         "priceDescription": record.get('price_description', '$100-200'),
         "description": record.get('description', ''),
         "website": record.get('website_url') or None,
+        "facebook_url": record.get('facebook_url') or None,
+        "instagram_url": record.get('instagram_url') or None,
         "googleMapsUrl": record.get('google_maps_url') or None,  # NEW
         "tips": record.get('tips') or None,
         "openingHours": record.get('opening_hours', '請查詢官網'),
