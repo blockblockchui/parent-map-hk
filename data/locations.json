@@ -190,7 +190,10 @@
       "verified": false,
       "updatedAt": "2026-02-12T23:31:47.994998",
       "checkedAt": "https://www.hongkong-map.com/attractions/legoland-discovery-centre-hong-kong/2635\n | https://www.legolanddiscoverycentre.com/",
-      "sourceUrls": ""
+      "sourceUrls": "",
+      "images": {
+        "local": "/images/places/legoland.webp"
+      }
     },
     {
       "id": "C5N8L1HT",
@@ -779,7 +782,10 @@
       "verified": false,
       "updatedAt": "2026-02-12T23:50:11.615175",
       "checkedAt": "2026-02-12",
-      "sourceUrls": "https://www.epiclandhk.com/ | https://www.facebook.com/epiclandhk | https://www.instagram.com/epiclandhk"
+      "sourceUrls": "https://www.epiclandhk.com/ | https://www.facebook.com/epiclandhk | https://www.instagram.com/epiclandhk",
+      "images": {
+        "local": "/images/places/epicland.jpg"
+      }
     },
     {
       "id": "Y5Z6A7B8",
@@ -1430,7 +1436,10 @@
       "verified": true,
       "updatedAt": "2026-02-12T23:55:44.599792",
       "checkedAt": "2026-02-12",
-      "sourceUrls": "original_50_locations"
+      "sourceUrls": "original_50_locations",
+      "images": {
+        "local": "/images/places/nobinobi.png"
+      }
     },
     {
       "id": 19,
@@ -1988,7 +1997,10 @@
       "verified": false,
       "updatedAt": "2026-02-13T08:17:30.245768",
       "checkedAt": "2026-02-13",
-      "sourceUrls": "Google Places API"
+      "sourceUrls": "Google Places API",
+      "images": {
+        "local": "/images/places/kiztopia.webp"
+      }
     }
   ]
 }
