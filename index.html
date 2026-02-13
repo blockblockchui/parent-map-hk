@@ -303,7 +303,10 @@
         <div id="listHeader" class="sticky top-0 z-40 bg-gray-50/95 backdrop-blur-sm py-3 -mx-4 px-4 border-b border-gray-200/50 transition-shadow">
             <div class="flex items-center justify-between flex-wrap gap-2">
                 <div class="flex items-center gap-3 flex-wrap">
-                    <h2 class="text-lg font-semibold">📍 地點列表</h2>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-lg font-semibold">📍 地點列表</h2>
+                        <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
+                    </div>
                     <!-- Active scenario buttons will appear here -->
                     <div id="activeScenarios" class="flex items-center gap-1"></div>
                 </div>
@@ -319,7 +322,6 @@
                     <button id="layoutToggle" class="px-3 py-2 border rounded-lg text-sm bg-white border-gray-300 hover:bg-gray-50 transition-colors" title="切換佈局">
                         ⊞ 格狀
                     </button>
-                    <span id="resultCount" class="text-sm text-gray-500">載入中...</span>
                 </div>
             </div>
         </div>
@@ -415,8 +417,11 @@
         let favorites = JSON.parse(localStorage.getItem('parentMapFavorites') || '[]');
         let showFavoritesOnly = false;
         
-        // Layout state (grid or list)
-        let isListView = localStorage.getItem('parentMapLayout') === 'list';
+        // Layout state (grid or list) - default: grid on desktop, list on mobile
+        const isMobile = window.innerWidth < 768;
+        let isListView = localStorage.getItem('parentMapLayout') ? 
+            localStorage.getItem('parentMapLayout') === 'list' : 
+            isMobile;
 
         // Update favorites count and button style
         function updateFavoritesUI() {
@@ -740,10 +745,19 @@
             listEl.innerHTML = filtered.map(l => {
                 // 計算距離（如果用戶已定位，一律顯示）
                 let distanceHtml = '';
+                let walkingTimeHtml = '';
                 if (userLocation) {
                     const dist = calculateDistance(userLocation.lat, userLocation.lng, l.lat, l.lng);
                     const distText = dist >= 1000 ? `${(dist/1000).toFixed(1)}公里` : `${Math.round(dist)}米`;
                     distanceHtml = `<span class="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">📏 ${distText}</span>`;
+                    
+                    // 計算步行時間 (1公里 = 12分鐘)
+                    const walkingMinutes = Math.round((dist / 1000) * 12);
+                    if (walkingMinutes <= 30) {
+                        walkingTimeHtml = `<span class="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded">🚶 步行約${walkingMinutes}分鐘</span>`;
+                    } else {
+                        walkingTimeHtml = `<span class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded">🚶 行路搞唔掂</span>`;
+                    }
                 }
                 
                 const catStyle = categoryIcons[l.category] || { icon: '🎯', bg: 'from-blue-400 to-purple-500' };
@@ -777,19 +791,19 @@
                 `;
                 
                 if (isListView) {
-                    // List view layout
+                    // List view layout - mobile hides images, shows on sm and up
                     const imageSection = hasImage ? `
-                        <div class="card-image-wrapper">
-                            <img src="${imageUrl}" alt="${l.name}" 
+                        <div class="card-image-wrapper hidden sm:block">
+                            <img src="${imageUrl}" alt="${l.name}"
                                 class="w-full h-full object-cover"
                                 onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'bg-gradient-to-br ${catStyle.bg} w-full h-full flex items-center justify-center\\'><span class=\\'text-white text-3xl\\'>${catStyle.icon}</span></div>';">
                         </div>
                     ` : `
-                        <div class="card-image-wrapper bg-gradient-to-br ${catStyle.bg} flex items-center justify-center">
+                        <div class="card-image-wrapper bg-gradient-to-br ${catStyle.bg} hidden sm:flex items-center justify-center">
                             <span class="text-white text-3xl">${catStyle.icon}</span>
                         </div>
                     `;
-                    
+
                     return `
                     <div class="location-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300">
                         ${imageSection}
@@ -800,13 +814,13 @@
                                         <span class="text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">${categoryLabels[l.category]}</span>
                                         ${l.verified === false || l.autoDiscovered ? '<span class="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">⚠️ 未驗證</span>' : ''}
                                         ${distanceHtml}
+                                        ${walkingTimeHtml}
                                     </div>
                                 </div>
                                 <h3 class="card-title font-bold text-gray-900">${l.name}</h3>
-                                ${l.nameEn ? `<p class="text-xs text-gray-500 mb-1">${l.nameEn}</p>` : ''}
                                 <div class="card-meta flex items-center gap-1 text-sm text-gray-600">
                                     <span>📍</span>
-                                    <span>${regionLabels[l.region]} · ${l.district}</span>
+                                    <span>${l.district}</span>
                                 </div>
                                 ${tagsHtml}
                                 ${agePriceHtml}
