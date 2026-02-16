@@ -72,11 +72,11 @@ class JSONExporter:
         all_places = self.sheets.get_all_places()
         print(f"Total places in Sheets: {len(all_places)}")
         
-        # Filter places
+        # Filter places (include all non-closed places)
         filtered = self._filter_places(
             all_places,
-            only_verified=only_verified,
-            min_confidence=min_confidence
+            only_verified=False,
+            min_confidence=0
         )
         print(f"Places after filtering: {len(filtered)}")
         
