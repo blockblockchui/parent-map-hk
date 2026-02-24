@@ -76,7 +76,46 @@ except gspread.WorksheetNotFound:
 
 # Get existing places for deduplication
 print("\n📊 獲取現有地點...")
-existing = worksheet.get_all_records()
+
+# Define expected headers to avoid duplicate header issues
+EXPECTED_HEADERS = [
+    "place_id", "slug", "name", "name_en", "region", "district", "address", "lat", "lng",
+    "geocode_confidence", "category", "indoor", "age_min", "age_max", "price_tier",
+    "price_description", "description", "tips", "facilities", "opening_hours",
+    "website_url", "facebook_url", "instagram_url", "google_maps_url", "status",
+    "validation_stage", "confidence", "risk_tier", "evidence_urls", "evidence_snippets",
+    "source_urls", "published_at", "updated_at", "last_checked_at", "next_check_at",
+    "checked_at", "review_owner", "review_due_at", "resolution", "false_alarm_reason"
+]
+
+try:
+    existing = worksheet.get_all_records(expected_headers=EXPECTED_HEADERS)
+except Exception as e:
+    print(f"  ⚠️  讀取失敗，嘗試修復模式: {e}")
+    # Fallback: get raw values and parse manually
+    all_values = worksheet.get_all_values()
+    if len(all_values) < 2:
+        existing = []
+    else:
+        headers = all_values[0]
+        # De-duplicate headers by appending index
+        seen = {}
+        unique_headers = []
+        for i, h in enumerate(headers):
+            if h in seen:
+                unique_headers.append(f"{h}_{i}")
+            else:
+                seen[h] = True
+                unique_headers.append(h)
+        rows = []
+        for row_vals in all_values[1:]:
+            row_dict = {}
+            for i, val in enumerate(row_vals):
+                if i < len(unique_headers):
+                    row_dict[unique_headers[i]] = val
+            rows.append(row_dict)
+        existing = rows
+
 existing_names = {(row.get('name', ''), row.get('district', '')) for row in existing}
 print(f"  現有: {len(existing)} 個地點")
 
