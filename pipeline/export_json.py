@@ -62,6 +62,39 @@ except Exception as e:
     print(f"⚠️ Could not load place_links: {e}")
     links_map = {}
 
+# Load opening hours mapping from 13_opening_hours_mapping
+try:
+    oh_ws = spreadsheet.worksheet("13_opening_hours_mapping")
+    oh_records = oh_ws.get_all_records()
+    # Build lookup: id -> opening_hours_mapping (id matches opening_hours_json_mapping in places)
+    opening_hours_map = {}
+    for oh in oh_records:
+        oh_id = oh.get('id')
+        if oh_id:
+            # Parse opening_hours_json which contains the full mapping
+            oh_json = oh.get('opening_hours_json')
+            if oh_json and isinstance(oh_json, str):
+                try:
+                    import json
+                    parsed = json.loads(oh_json)
+                    opening_hours_map[oh_id] = {
+                        'default_hours': parsed.get('default_hours', ''),
+                        'has_override': parsed.get('has_override', False),
+                        'override_rule': parsed.get('override_rule'),
+                    }
+                except:
+                    pass
+            elif oh_json and isinstance(oh_json, dict):
+                opening_hours_map[oh_id] = {
+                    'default_hours': oh_json.get('default_hours', ''),
+                    'has_override': oh_json.get('has_override', False),
+                    'override_rule': oh_json.get('override_rule'),
+                }
+    print(f"✓ Loaded {len(opening_hours_map)} opening hours mappings")
+except Exception as e:
+    print(f"⚠️ Could not load opening_hours_mapping: {e}")
+    opening_hours_map = {}
+
 # Convert to frontend format
 locations = []
 for record in records:
@@ -143,6 +176,16 @@ for record in records:
         "updatedAt": record.get('updated_at'),
         "stay_duration_min": int(record['stay_duration_min']) if record.get('stay_duration_min') and str(record['stay_duration_min']).strip().isdigit() else None,
     }
+    
+    # Add opening hours mapping if exists
+    oh_mapping_id = record.get('opening_hours_json_mapping')
+    if oh_mapping_id:
+        try:
+            oh_id = int(oh_mapping_id)
+            location["opening_hours_mapping"] = opening_hours_map.get(oh_id)
+        except (ValueError, TypeError):
+            pass
+    
     locations.append(location)
 
 print(f"✓ {len(locations)} places ready for export")
