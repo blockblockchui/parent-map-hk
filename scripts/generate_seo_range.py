@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """
-簡化版 SEO Description Generator - 分批執行
+批量更新 SEO Description - 使用 range 更新避免 API 限制
 """
 
 import gspread
 import time
 from google.oauth2.service_account import Credentials
+from gspread.cell import Cell
 
 SHEET_ID = "1xUL8jiJckSTe3ScThsh-USNWb2DqpGnkroGdarafJgk"
 WORKSHEET_NAME = "03_places"
@@ -27,14 +28,14 @@ CATEGORY_FEATURES = {
 
 def generate_seo_desc(row):
     """生成 SEO 描述"""
-    district = row.get('district', '')
-    category = row.get('category', '')
+    district = row.get('district', row.get('district_id', ''))
+    category = row.get('category', row.get('category_key', ''))
     
-    # 檢查是否免費（通過 price_tier 或 price_tier_raw）
+    # 檢查是否免費（通過 price_tier 字段）
     price_tier = row.get('price_tier', row.get('priceTier', ''))
     is_free = str(price_tier).lower() in ['free', '免費', '0']
     
-    # 檢查室內字段
+    # 檢查是否室內
     indoor_val = row.get('indoor', row.get('indoor_raw', ''))
     is_indoor = str(indoor_val).lower() in ['yes', 'true', '是', '室內', 'indoor', '1']
     
@@ -64,7 +65,11 @@ def generate_seo_desc(row):
     else:
         transport = "交通便利"
     
-    desc = f"{district}親子{location_type}{category}，{features}，適合{age_desc}兒童放電，{price_tag}入場，{transport}。"
+    # 處理 district 可能為空的情況
+    if district:
+        desc = f"{district}親子{location_type}{category}，{features}，適合{age_desc}兒童放電，{price_tag}入場，{transport}。"
+    else:
+        desc = f"親子{location_type}{category}，{features}，適合{age_desc}兒童放電，{price_tag}入場，{transport}。"
     
     # 截斷到 120 字
     if len(desc) > 120:
@@ -74,7 +79,7 @@ def generate_seo_desc(row):
 
 def main():
     print("=" * 60)
-    print("SEO Description Generator (簡化版)")
+    print("SEO Description Generator (Range 更新版)")
     print("=" * 60)
     
     # 連接 Google Sheets
@@ -84,10 +89,7 @@ def main():
     
     sheet = client.open_by_key(SHEET_ID).worksheet(WORKSHEET_NAME)
     
-    # 只讀取需要的列（提高速度）
     print("\n讀取數據...")
-    
-    # 讀取所有記錄
     records = sheet.get_all_records()
     total = len(records)
     
@@ -98,34 +100,54 @@ def main():
     print(f"\n示例（第 1 筆）:")
     test = generate_seo_desc(records[0])
     print(f"  {test}")
-    print(f"  長度: {len(test)} 字\n")
+    print(f"  長度: {len(test)} 字")
     
-    # 確認繼續（自動模式，跳過確認）
-    print("自動確認: yes")
-    print("開始更新...\n")
+    print(f"\n開始生成所有描述並批量更新...")
+    print("(使用 update 方法，每批 500 筆)\n")
     
-    # 開始更新
-    print(f"\n開始更新...")
+    # 生成所有描述並準備更新
+    all_values = []
+    for i, row in enumerate(records):
+        desc = generate_seo_desc(row)
+        all_values.append([desc])
+    
+    print(f"✅ 已生成 {len(all_values)} 個描述")
+    print(f"開始更新到 Google Sheets...\n")
+    
+    # 使用 update 方法一次性更新（或分批）
+    batch_size = 500
     updated = 0
     
-    for i, row in enumerate(records, start=2):
+    for batch_start in range(0, len(all_values), batch_size):
+        batch_end = min(batch_start + batch_size, len(all_values))
+        batch = all_values[batch_start:batch_end]
+        
+        # 計算 range
+        start_row = batch_start + 2  # +2 因為第 1 行是 header
+        end_row = batch_end + 1
+        range_str = f"{gspread.utils.rowcol_to_a1(start_row, SEO_COL)}:{gspread.utils.rowcol_to_a1(end_row, SEO_COL)}"
+        
         try:
-            desc = generate_seo_desc(row)
-            sheet.update_cell(i, SEO_COL, desc)
-            updated += 1
+            # 使用 update 方法
+            sheet.update(range_str, batch, value_input_option='RAW')
+            updated += len(batch)
+            print(f"  ✅ 已更新 {updated} / {total} 筆... (range: {range_str})")
             
-            if updated % 10 == 0:
-                print(f"  已更新 {updated} / {total} 筆...")
-            
-            # 每 10 筆暫停 1 秒避免 API 限制
-            if updated % 10 == 0:
-                time.sleep(1)
+            # 避免 API 限制
+            if batch_end < len(all_values):
+                time.sleep(3)
                 
         except Exception as e:
-            print(f"  錯誤第 {i} 行: {e}")
-            time.sleep(5)
+            print(f"  ❌ 錯誤: {e}")
+            print(f"     等待 10 秒後重試...")
+            time.sleep(10)
+            sheet.update(range_str, batch, value_input_option='RAW')
+            updated += len(batch)
+            print(f"  ✅ 重試成功，已更新 {updated} / {total} 筆...")
     
-    print(f"\n✅ 完成! 共更新 {updated} 筆記錄")
+    print(f"\n" + "=" * 60)
+    print(f"✅ 完成! 共更新 {updated} 筆記錄")
+    print("=" * 60)
 
 if __name__ == "__main__":
     main()
