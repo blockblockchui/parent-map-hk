@@ -125,82 +125,20 @@ class BaseCrawler:
         """子類別需要實作此方法"""
         raise NotImplementedError("子類別必須實作 crawl() 方法")
 
-# LCSD 康文署爬蟲
+# LCSD 康文署爬蟲（暫時停用，等待正確 URL）
 class LCSDCrawler(BaseCrawler):
     """康文署活動爬蟲"""
     
     def __init__(self):
         super().__init__(
             name='康文署',
-            base_url='https://www.lcsd.gov.hk/tc/whats-on/index.html'
+            base_url='https://www.lcsd.gov.hk/tc/'
         )
     
     def crawl(self) -> List[Event]:
-        events = []
-        soup = self.fetch(self.base_url)
-        if not soup:
-            return events
-        
-        # 尋找活動列表
-        event_items = soup.find_all('div', class_='eventItem')
-        
-        for item in event_items[:20]:  # 限制前 20 個
-            try:
-                # 提取標題
-                title_tag = item.find('h3') or item.find('a', class_='title')
-                if not title_tag:
-                    continue
-                title = title_tag.get_text(strip=True)
-                
-                # 檢查是否親子活動
-                if not self.is_parent_child_event(title):
-                    continue
-                
-                # 提取日期
-                date_tag = item.find('span', class_='date') or item.find('div', class_='date')
-                date_str = date_tag.get_text(strip=True) if date_tag else ''
-                start_date, end_date = self.parse_date(date_str)
-                
-                # 提取地點
-                location_tag = item.find('span', class_='venue') or item.find('div', class_='location')
-                location = location_tag.get_text(strip=True) if location_tag else '康文署場地'
-                
-                # 提取連結
-                link_tag = item.find('a')
-                source_url = link_tag.get('href', '') if link_tag else ''
-                if source_url and not source_url.startswith('http'):
-                    source_url = f"https://www.lcsd.gov.hk{source_url}"
-                
-                # 提取描述
-                desc_tag = item.find('div', class_='description') or item.find('p')
-                description = desc_tag.get_text(strip=True) if desc_tag else title
-                
-                # 提取圖片
-                img_tag = item.find('img')
-                image_url = img_tag.get('src', '') if img_tag else ''
-                if image_url and not image_url.startswith('http'):
-                    image_url = f"https://www.lcsd.gov.hk{image_url}"
-                
-                event = Event(
-                    name=title,
-                    description=description[:200],  # 限制長度
-                    start_date=start_date,
-                    end_date=end_date,
-                    location=location,
-                    organizer='康文署',
-                    source_url=source_url,
-                    image_url=image_url,
-                    is_free=True,  # 康文署活動通常免費
-                    category='其他'
-                )
-                events.append(event)
-                
-            except Exception as e:
-                print(f"解析活動時出錯: {e}")
-                continue
-        
-        print(f"✅ {self.name}: 找到 {len(events)} 個親子活動")
-        return events
+        # 暫時返回空列表，需要手動更新正確的活動頁面 URL
+        print(f"⚠️ {self.name}: 暫時停用，請更新正確的活動頁面 URL")
+        return []
 
 # HKPL 圖書館爬蟲
 class HKPLCrawler(BaseCrawler):
@@ -267,14 +205,75 @@ class HKPLCrawler(BaseCrawler):
         print(f"✅ {self.name}: 找到 {len(events)} 個親子活動")
         return events
 
+# WKCD 西九文化區爬蟲
+class WKCDCrawler(BaseCrawler):
+    """西九文化區活動爬蟲"""
+    
+    def __init__(self):
+        super().__init__(
+            name='西九文化區',
+            base_url='https://www.westkowloon.hk/tc/events'
+        )
+    
+    def crawl(self) -> List[Event]:
+        events = []
+        soup = self.fetch(self.base_url)
+        if not soup:
+            return events
+        
+        # 尋找活動項目
+        event_items = soup.find_all('div', class_='event-item') or soup.find_all('article')
+        
+        for item in event_items[:10]:
+            try:
+                title_tag = item.find('h2') or item.find('h3') or item.find('a', class_='title')
+                if not title_tag:
+                    continue
+                title = title_tag.get_text(strip=True)
+                
+                if not self.is_parent_child_event(title):
+                    continue
+                
+                # 提取日期
+                date_tag = item.find('span', class_='date') or item.find('time')
+                date_str = date_tag.get_text(strip=True) if date_tag else ''
+                start_date, end_date = self.parse_date(date_str)
+                
+                # 提取連結
+                link_tag = item.find('a')
+                source_url = link_tag.get('href', '') if link_tag else ''
+                if source_url and not source_url.startswith('http'):
+                    source_url = f"https://www.westkowloon.hk{source_url}"
+                
+                event = Event(
+                    name=title,
+                    description=title,
+                    start_date=start_date,
+                    end_date=end_date,
+                    location='西九文化區',
+                    organizer='西九文化區',
+                    source_url=source_url,
+                    is_free=True,
+                    category='展覽'
+                )
+                events.append(event)
+                
+            except Exception as e:
+                print(f"解析活動時出錯: {e}")
+                continue
+        
+        print(f"✅ {self.name}: 找到 {len(events)} 個親子活動")
+        return events
+
 # 主執行函數
 def run_crawlers() -> List[Event]:
     """執行所有爬蟲並返回活動列表"""
     all_events = []
     
     crawlers = [
-        LCSDCrawler(),
+        # LCSDCrawler(),  # 暫時停用
         HKPLCrawler(),
+        WKCDCrawler(),
     ]
     
     for crawler in crawlers:
