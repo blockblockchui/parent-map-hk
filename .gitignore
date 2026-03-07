@@ -44,3 +44,6 @@ next-env.d.ts
 # Service Account
 service-account.json
 scripts/service-account.json
+venv/
+*.pyc
+__pycache__/
