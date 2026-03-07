@@ -8,6 +8,8 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from crawlers.crawler_hkpl_final import HKPLCrawlerFinal
+from crawlers.crawler_science_museum_final import ScienceMuseumCrawler
+from crawlers.crawler_hkpm import HKPMCrawler
 from crawlers.base_playwright import Event
 from typing import List
 
@@ -21,17 +23,47 @@ def run_crawler():
     """執行爬蟲"""
     print("="*60)
     print("🎯 Event Radar - Playwright Crawler")
-    print("   Final Version with Google Sheets Export")
+    print("   Multi-Source Version with Google Sheets Export")
     print("="*60)
     
-    with HKPLCrawlerFinal() as crawler:
-        events = crawler.crawl()
+    all_events = []
     
-    return events
+    # HKPL Crawler
+    print("\n📚 Running HKPL Crawler...")
+    try:
+        with HKPLCrawlerFinal() as crawler:
+            events = crawler.crawl()
+            for e in events:
+                all_events.append((e, 'crawler_hkpl_final.py'))
+    except Exception as e:
+        print(f"   ❌ HKPL 錯誤: {e}")
+    
+    # Science Museum Crawler
+    print("\n🔬 Running Science Museum Crawler...")
+    try:
+        with ScienceMuseumCrawler() as crawler:
+            events = crawler.crawl()
+            for e in events:
+                all_events.append((e, 'crawler_science_museum_final.py'))
+    except Exception as e:
+        print(f"   ❌ Science Museum 錯誤: {e}")
+    
+    # HKPM Crawler
+    print("\n🏛️  Running HKPM Crawler...")
+    try:
+        with HKPMCrawler() as crawler:
+            events = crawler.crawl()
+            for e in events:
+                all_events.append((e, 'crawler_hkpm.py'))
+    except Exception as e:
+        print(f"   ❌ HKPM 錯誤: {e}")
+    
+    print(f"\n📊 總共找到 {len(all_events)} 個活動")
+    return all_events
 
-def write_to_sheets(events: List[Event]):
+def write_to_sheets(events_with_source):
     """寫入 Google Sheets"""
-    if not events:
+    if not events_with_source:
         print("\n❌ 沒有活動可寫入")
         return 0, 0
     
@@ -81,8 +113,8 @@ def write_to_sheets(events: List[Event]):
     added = 0
     skipped = 0
     
-    for event in events:
-        event_dict = event.to_dict()
+    for event, crawler_source in events_with_source:
+        event_dict = event.to_dict(crawler_source)
         event_id = event_dict['event_id']
         
         if event_id in existing_ids:
@@ -106,13 +138,14 @@ def write_to_sheets(events: List[Event]):
             event_dict['venue_slug'],
             event_dict['status'],
             event_dict['created_at'],
-            event_dict['notes']
+            event_dict['notes'],
+            event_dict.get('crawler_source', '')
         ]
         
         worksheet.append_row(row)
         existing_ids.add(event_id)
         added += 1
-        print(f"   ✅ 添加: {event.name[:40]}...")
+        print(f"   ✅ 添加: {event.name[:40]}... [{crawler_source}]")
     
     print(f"\n✅ 寫入完成!")
     print(f"   新增: {added}")
@@ -123,21 +156,22 @@ def write_to_sheets(events: List[Event]):
 
 if __name__ == '__main__':
     # 執行爬蟲
-    events = run_crawler()
+    events_with_source = run_crawler()
     
     # 顯示結果
     print(f"\n{'='*60}")
     print("📋 活動列表:")
     print('='*60)
-    for i, e in enumerate(events, 1):
+    for i, (e, source) in enumerate(events_with_source, 1):
         print(f"{i}. {e.name}")
         print(f"   日期: {e.start_date}")
         print(f"   地點: {e.location}")
+        print(f"   來源: {source}")
         print()
     
     # 寫入 Google Sheets
-    if events:
-        added, skipped = write_to_sheets(events)
+    if events_with_source:
+        added, skipped = write_to_sheets(events_with_source)
         print(f"\n🎉 完成! 共 {added} 個新活動已寫入 Google Sheets")
     else:
         print("\n❌ 沒有找到活動")

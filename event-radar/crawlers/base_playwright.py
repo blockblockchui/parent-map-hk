@@ -27,7 +27,7 @@ class Event:
     category: str = "其他"
     venue_slug: Optional[str] = None
     
-    def to_dict(self) -> Dict:
+    def to_dict(self, crawler_source: str = '') -> Dict:
         return {
             'event_id': hashlib.md5(f"{self.name}_{self.start_date}_{self.organizer}".encode()).hexdigest()[:12],
             'name': self.name,
@@ -44,7 +44,8 @@ class Event:
             'venue_slug': self.venue_slug or '',
             'status': '待審核',
             'created_at': datetime.now().strftime('%Y-%m-%d %H:%M'),
-            'notes': ''
+            'notes': '',
+            'crawler_source': crawler_source
         }
 
 class PlaywrightCrawler:
