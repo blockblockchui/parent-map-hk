@@ -191,12 +191,9 @@ if __name__ == '__main__':
         print(f"   主辦: {e.organizer}")
         print()
     
-    # 詢問是否寫入
+    # 自動寫入（不詢問）
     if events:
-        confirm = input(f"\n確認寫入 {len(events)} 個活動到 Google Sheets? (yes/no): ")
-        if confirm.lower() == 'yes':
-            write_to_sheets(events)
-        else:
-            print("已取消寫入")
+        print(f"\n📝 自動寫入 {len(events)} 個活動到 Google Sheets...")
+        write_to_sheets(events)
     else:
         print("\n❌ 沒有找到活動")
