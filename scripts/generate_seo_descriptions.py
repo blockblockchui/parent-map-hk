@@ -146,7 +146,9 @@ def main():
         
         # 獲取所有記錄
         print("正在讀取 Google Sheets 數據...")
+        print(f"  工作表: {WORKSHEET_NAME}")
         records = sheet.get_all_records()
+        print(f"  成功讀取 {len(records)} 筆記錄")
         
         # 找到 header row
         headers = sheet.row_values(1)
@@ -170,6 +172,7 @@ def main():
         
         # 生成並更新 seo_description
         print(f"\n開始生成 SEO 描述（共 {len(records)} 筆記錄）...")
+        print("（每 50 筆批量更新，API 限制時會自動等待）\n")
         
         updates = []
         for i, row in enumerate(records, start=2):  # start=2 因為第 1 行是 header
@@ -183,11 +186,13 @@ def main():
                 
                 if len(updates) >= 50:  # 每 50 筆批量更新
                     _batch_update(sheet, updates)
-                    print(f"  已更新 {i-1} / {len(records)} 筆...")
+                    print(f"  ✅ 已更新 {i-1} / {len(records)} 筆...")
                     updates = []
+                    time.sleep(2)  # 每次批量更新後等待 2 秒
                     
             except Exception as e:
-                print(f"  錯誤：第 {i} 行 - {e}")
+                print(f"  ❌ 錯誤：第 {i} 行 - {e}")
+                time.sleep(5)  # 錯誤後等待更長時間
         
         # 更新剩餘的
         if updates:
@@ -205,14 +210,39 @@ def main():
         print(f"錯誤：{e}")
         raise
 
-def _batch_update(sheet, updates):
-    """批量更新單元格"""
+import time
+
+def _batch_update(sheet, updates, max_retries=3):
+    """批量更新單元格，帶重試機制"""
     cells = []
     for update in updates:
         cell = sheet.cell(update['row'], update['col'])
         cell.value = update['value']
         cells.append(cell)
-    sheet.update_cells(cells, value_input_option='RAW')
+    
+    for attempt in range(max_retries):
+        try:
+            sheet.update_cells(cells, value_input_option='RAW')
+            return True
+        except Exception as e:
+            if '429' in str(e):
+                wait_time = (attempt + 1) * 10  # 10s, 20s, 30s
+                print(f"    API 配額限制，等待 {wait_time} 秒後重試...")
+                time.sleep(wait_time)
+            else:
+                raise
+    
+    # 如果還是失敗，逐個更新
+    print("    批量更新失敗，改用逐個更新...")
+    for update in updates:
+        try:
+            sheet.update_cell(update['row'], update['col'], update['value'])
+            time.sleep(0.5)  # 每個請求間隔 0.5 秒
+        except Exception as e:
+            if '429' in str(e):
+                time.sleep(5)
+                sheet.update_cell(update['row'], update['col'], update['value'])
+    return True
 
 if __name__ == "__main__":
     main()
