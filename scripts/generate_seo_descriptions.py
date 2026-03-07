@@ -62,12 +62,19 @@ def generate_seo_description(row):
     district = row.get('district', '')
     category = row.get('category', '')
     name = row.get('name_zh', '')
-    free_entry = row.get('free_entry', '').lower() in ['yes', 'true', '是', '免費']
-    indoor = row.get('indoor', '').lower() in ['yes', 'true', '是', '室內']
-    age_min = row.get('age_min')
-    age_max = row.get('age_max')
-    mtr_station = row.get('mtr_station_name', '')
-    mtr_access = row.get('mtr_access_minutes', '')
+    
+    # 檢查是否免費（通過 price_tier 字段）
+    price_tier = row.get('price_tier', row.get('priceTier', ''))
+    free_entry = str(price_tier).lower() in ['free', '免費', '0']
+    
+    # 檢查多個可能的室內字段名
+    indoor_val = row.get('indoor', row.get('indoor_raw', row.get('is_indoor', '')))
+    indoor = str(indoor_val).lower() in ['yes', 'true', '是', '室內', 'indoor', '1']
+    
+    age_min = row.get('age_min', row.get('ageMin'))
+    age_max = row.get('age_max', row.get('ageMax'))
+    mtr_station = row.get('mtr_station_name', row.get('mtrStationName', ''))
+    mtr_access = row.get('mtr_access_minutes', row.get('mtrAccessMinutes', ''))
     
     # 獲取設施描述
     features = CATEGORY_FEATURES.get(category, "設有親子友善設施")
@@ -171,11 +178,17 @@ def main():
             print(f"'seo_description' 欄位已存在（第 {new_col} 列）")
         
         # 生成並更新 seo_description
+        start_row = 2  # 從第 2 行開始（第 1 行是 header）
+        
         print(f"\n開始生成 SEO 描述（共 {len(records)} 筆記錄）...")
         print("（每 50 筆批量更新，API 限制時會自動等待）\n")
         
+        # 測試生成一個示例
+        test_desc = generate_seo_description(records[0])
+        print(f"示例輸出（第 1 筆）：{test_desc[:60]}...\n")
+        
         updates = []
-        for i, row in enumerate(records, start=2):  # start=2 因為第 1 行是 header
+        for i, row in enumerate(records, start=start_row):  # start=2 因為第 1 行是 header
             try:
                 seo_desc = generate_seo_description(row)
                 updates.append({
