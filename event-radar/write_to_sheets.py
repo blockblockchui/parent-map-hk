@@ -8,6 +8,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 import os
 import sys
+import hashlib
 
 # 確保能尋入 crawler
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -48,24 +49,6 @@ def init_worksheet(sheet):
         
         # 設置標題行
         worksheet.append_row(COLUMNS)
-        
-        # 設置欄寬
-        worksheet.set_column_width(1, 120)   # event_id
-        worksheet.set_column_width(2, 250)   # name
-        worksheet.set_column_width(3, 350)   # description
-        worksheet.set_column_width(4, 100)   # start_date
-        worksheet.set_column_width(5, 100)   # end_date
-        worksheet.set_column_width(6, 200)   # location
-        worksheet.set_column_width(7, 150)   # organizer
-        worksheet.set_column_width(8, 250)   # source_url
-        worksheet.set_column_width(9, 250)   # image_url
-        worksheet.set_column_width(10, 100)  # age_range
-        worksheet.set_column_width(11, 80)   # is_free
-        worksheet.set_column_width(12, 100)  # category
-        worksheet.set_column_width(13, 150)  # venue_slug
-        worksheet.set_column_width(14, 100)  # status
-        worksheet.set_column_width(15, 120)  # created_at
-        worksheet.set_column_width(16, 200)  # notes
         
         # 設置標題行格式
         worksheet.format('A1:P1', {
