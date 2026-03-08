@@ -76,17 +76,22 @@ class HKYAFStealthCrawler:
                     try:
                         print(f"    [{i}] {item['title'][:50]}...")
                         
+                        # 從列表頁提取日期 (格式: DD/MM/YYYY-DD/MM/YYYY)
+                        date_str = item.get('date_str', '')
+                        start_date = self._extract_date(date_str, is_end_date=False)
+                        end_date = self._extract_date(date_str, is_end_date=True)
+                        
                         # 進入內頁抓取詳細資訊
                         details = self._get_inner_details(context, item['url'])
                         
                         event = Event(
                             name=item['title'],
                             description=details.get('description', item['title']),
-                            start_date=self._extract_date(details.get('date_str', '')),
-                            end_date=self._extract_date(details.get('date_str', '')),
+                            start_date=start_date,
+                            end_date=end_date,
                             location=details.get('location', '香港青年藝術協會'),
                             organizer='香港青年藝術協會',
-                            source_url=item['url'].replace('/en/', '/zh/'),
+                            source_url=item['url'].replace('/en/', '/zh_tw/'),
                             image_url=details.get('image_url', ''),
                             is_free=details.get('is_free', True),
                             category=details.get('category', '工作坊'),
@@ -94,7 +99,7 @@ class HKYAFStealthCrawler:
                         )
                         
                         events.append(event)
-                        print(f"      ✅ {event.start_date} | {event.location}")
+                        print(f"      ✅ {event.start_date} ~ {event.end_date} | {event.location}")
                         
                     except Exception as e:
                         print(f"      ❌ 錯誤: {e}")
@@ -200,29 +205,61 @@ class HKYAFStealthCrawler:
                 link_tag = h2.find_parent('a') or h2.find_next('a')
                 if link_tag:
                     href = link_tag.get('href', '')
-                    if href:
+                    if href and href != '#':
                         if href.startswith('/'):
                             url = f"https://www.hkyaf.com{href}"
                         elif href.startswith('http'):
                             url = href
                 
+                # ✨ 關鍵：從列表頁提取日期（格式: 01/12/2023-31/03/2026）
+                date_str = ''
+                parent = h2.find_parent(['div', 'section', 'article'])
+                if parent:
+                    # 查找日期元素
+                    date_el = parent.select_one('.field-name-field-event-date, .date, .event-date')
+                    if date_el:
+                        date_str = date_el.get_text(strip=True)
+                    else:
+                        # 從文本中提取日期
+                        text = parent.get_text()
+                        date_match = re.search(r'(\d{2}/\d{2}/\d{4})-(\d{2}/\d{2}/\d{4})', text)
+                        if date_match:
+                            date_str = date_match.group(0)
+                
                 events.append({
                     'title': title[:100],
-                    'url': url
+                    'url': url,
+                    'date_str': date_str
                 })
-                print(f"      找到: {title[:50]}")
+                print(f"      找到: {title[:50]} | 日期: {date_str}")
                 
             except Exception as e:
                 continue
         
         return events
     
-    def _extract_date(self, text: str) -> str:
-        """從文本提取日期"""
+    def _extract_date(self, text: str, is_end_date: bool = False) -> str:
+        """從文本提取日期
+        支持格式:
+        - DD/MM/YYYY-DD/MM/YYYY (HKYAF 格式)
+        - 2026年3月15日
+        - 2026-03-15
+        - 15/03/2026
+        """
         if not text or text == "詳情見連結":
             return datetime.now().strftime('%Y-%m-%d')
         
-        # 嘗試匹配各種日期格式
+        # ✨ HKYAF 格式: 01/12/2023-31/03/2026 (DD/MM/YYYY-DD/MM/YYYY)
+        range_match = re.search(r'(\d{2})/(\d{2})/(\d{4})-(\d{2})/(\d{2})/(\d{4})', text)
+        if range_match:
+            start_day, start_month, start_year = range_match.group(1), range_match.group(2), range_match.group(3)
+            end_day, end_month, end_year = range_match.group(4), range_match.group(5), range_match.group(6)
+            
+            if is_end_date:
+                return f"{end_year}-{end_month}-{end_day}"
+            else:
+                return f"{start_year}-{start_month}-{start_day}"
+        
         # 2026年3月15日
         match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', text)
         if match:
