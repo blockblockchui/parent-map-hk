@@ -10,6 +10,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from crawlers.crawler_hkpl_final import HKPLCrawlerFinal
 from crawlers.crawler_science_museum_final import ScienceMuseumCrawler
 from crawlers.crawler_hkpm import HKPMCrawler
+from crawlers.crawler_hkyaf import HKYAFCrawler
+from crawlers.crawler_lcsd_final import LCSDCrawler
+from crawlers.crawler_taikwun import TaikwunCrawler
 from crawlers.base_playwright import Event
 from typing import List
 
@@ -57,6 +60,36 @@ def run_crawler():
                 all_events.append((e, 'crawler_hkpm.py'))
     except Exception as e:
         print(f"   ❌ HKPM 錯誤: {e}")
+    
+    # HKYAF Crawler
+    print("\n🎨 Running HKYAF Crawler...")
+    try:
+        with HKYAFCrawler() as crawler:
+            events = crawler.crawl()
+            for e in events:
+                all_events.append((e, 'crawler_hkyaf.py'))
+    except Exception as e:
+        print(f"   ❌ HKYAF 錯誤: {e}")
+    
+    # LCSD Crawler
+    print("\n🏛️  Running LCSD Crawler...")
+    try:
+        with LCSDCrawler() as crawler:
+            events = crawler.crawl()
+            for e in events:
+                all_events.append((e, 'crawler_lcsd_final.py'))
+    except Exception as e:
+        print(f"   ❌ LCSD 錯誤: {e}")
+    
+    # Taikwun Crawler
+    print("\n🎭 Running Taikwun Crawler...")
+    try:
+        with TaikwunCrawler() as crawler:
+            events = crawler.crawl()
+            for e in events:
+                all_events.append((e, 'crawler_taikwun.py'))
+    except Exception as e:
+        print(f"   ❌ Taikwun 錯誤: {e}")
     
     print(f"\n📊 總共找到 {len(all_events)} 個活動")
     return all_events
