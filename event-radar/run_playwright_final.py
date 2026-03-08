@@ -10,8 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from crawlers.crawler_hkpl_final import HKPLCrawlerFinal
 from crawlers.crawler_science_museum_final import ScienceMuseumCrawler
 from crawlers.crawler_hkpm import HKPMCrawler
-# from crawlers.crawler_hkyaf import HKYAFCrawler  # Cloudflare protected
-# from crawlers.crawler_hkyaf_requests import HKYAFRequestsCrawler  # Cloudflare protected
+from crawlers.crawler_hkyaf_stealth import HKYAFStealthCrawler  # Using stealth mode
 from crawlers.crawler_lcsd_final import LCSDCrawler
 from crawlers.crawler_taikwun import TaikwunCrawler
 from crawlers.crawler_taikwun_requests import TaikwunRequestsCrawler
@@ -63,17 +62,15 @@ def run_crawler():
     except Exception as e:
         print(f"   ❌ HKPM 錯誤: {e}")
     
-    # HKYAF Crawler (Cloudflare protected, skipped for now)
-    print("\n🎨 Running HKYAF Crawler...")
-    print("   ⚠️  HKYAF 網站有 Cloudflare 保護，暫時跳過")
-    # Uncomment below when Cloudflare bypass is implemented
-    # try:
-    #     crawler = HKYAFRequestsCrawler()
-    #     events = crawler.crawl()
-    #     for e in events:
-    #         all_events.append((e, 'crawler_hkyaf_requests.py'))
-    # except Exception as e:
-    #     print(f"   ❌ HKYAF 錯誤: {e}")
+    # HKYAF Crawler (Stealth mode to bypass Cloudflare)
+    print("\n🎨 Running HKYAF Crawler (Stealth)...")
+    try:
+        crawler = HKYAFStealthCrawler()
+        events = crawler.crawl()
+        for e in events:
+            all_events.append((e, 'crawler_hkyaf_stealth.py'))
+    except Exception as e:
+        print(f"   ❌ HKYAF 錯誤: {e}")
     
     # LCSD Crawler
     print("\n🏛️  Running LCSD Crawler...")
