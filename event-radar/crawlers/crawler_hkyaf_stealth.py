@@ -3,6 +3,7 @@
 Source: Hong Kong Youth Arts Foundation (HKYAF)
 URL: https://www.hkyaf.com/events
 Method: Playwright + Stealth mode (bypass Cloudflare)
+Language: Force Traditional Chinese (zh-HK)
 """
 
 import sys
@@ -19,26 +20,29 @@ from datetime import datetime
 import time
 
 class HKYAFStealthCrawler:
-    """香港青年藝術協會活動爬蟲 - 使用 Playwright + Stealth 模式繞過 Cloudflare"""
+    """香港青年藝術協會活動爬蟲 - 使用 Playwright + Stealth 模式繞過 Cloudflare，強制繁體中文"""
     
     def __init__(self):
         self.name = '香港青年藝術協會'
-        self.base_url = 'https://www.hkyaf.com/events?action=filter'
-        self.keywords = ['親子', '兒童', '家庭', '工作坊', '小小', '家長', '學生', '青少年', 'kid', 'children', 'family']
+        # 使用繁體中文 URL (zh_tw)
+        self.base_url = 'https://www.hkyaf.com/zh_tw/events?action=filter'
+        # 繁體中文關鍵字
+        self.keywords = ['親子', '兒童', '家庭', '工作坊', '小小', '家長', '學生', '青少年', '藝術', '招募', 'kid', 'children', 'family', 'art']
     
     def crawl(self) -> List[Event]:
         events = []
         
-        print(f"  🚀 啟動 Stealth 模式訪問: {self.base_url}")
+        print(f"  🚀 啟動 Stealth 模式訪問 (繁體中文): {self.base_url}")
         
         try:
             with sync_playwright() as p:
                 # 啟動 Chromium (headless 模式)
                 browser = p.chromium.launch(headless=True)
                 
-                # 建立 context 並設置 User-Agent
+                # ✨ 關鍵：設置 locale 為 zh-HK，確保請求繁體中文內容
                 context = browser.new_context(
                     user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+                    locale="zh-HK",  # 強制繁體中文
                     viewport={'width': 1920, 'height': 1080}
                 )
                 
@@ -72,21 +76,25 @@ class HKYAFStealthCrawler:
                     try:
                         print(f"    [{i}] {item['title'][:50]}...")
                         
+                        # 進入內頁抓取詳細資訊
+                        details = self._get_inner_details(context, item['url'])
+                        
                         event = Event(
                             name=item['title'],
-                            description=item.get('description', item['title']),
-                            start_date=self._extract_date(item.get('date_str', '')),
-                            end_date=self._extract_date(item.get('date_str', '')),
-                            location='香港青年藝術協會',
+                            description=details.get('description', item['title']),
+                            start_date=self._extract_date(details.get('date_str', '')),
+                            end_date=self._extract_date(details.get('date_str', '')),
+                            location=details.get('location', '香港青年藝術協會'),
                             organizer='香港青年藝術協會',
-                            source_url=item['url'],
-                            is_free=True,
-                            category='工作坊',
-                            age_range='6-18歲'
+                            source_url=item['url'].replace('/en/', '/zh/'),
+                            image_url=details.get('image_url', ''),
+                            is_free=details.get('is_free', True),
+                            category=details.get('category', '工作坊'),
+                            age_range=details.get('age_range', '6-18歲')
                         )
                         
                         events.append(event)
-                        print(f"      ✅ {event.start_date}")
+                        print(f"      ✅ {event.start_date} | {event.location}")
                         
                     except Exception as e:
                         print(f"      ❌ 錯誤: {e}")
@@ -100,12 +108,78 @@ class HKYAFStealthCrawler:
         print(f"  ✅ 總計找到 {len(events)} 個活動")
         return events
     
+    def _get_inner_details(self, context, url: str) -> dict:
+        """進入內頁抓取繁中詳細資訊"""
+        # 強制將連結轉向繁體中文路徑 (使用 zh_tw)
+        zh_url = url.replace('/en/', '/zh_tw/').replace('/events/', '/zh_tw/events/')
+        
+        details = {
+            "description": "",
+            "date_str": "",
+            "age_range": "未註明",
+            "is_free": True,
+            "location": "見官網",
+            "image_url": "",
+            "category": "藝術工作坊"
+        }
+        
+        try:
+            page = context.new_page()
+            
+            # 啟用 Stealth
+            stealth_obj = Stealth()
+            stealth_obj.apply_stealth_sync(page)
+            
+            page.goto(zh_url, wait_until="networkidle", timeout=30000)
+            time.sleep(1.5)
+            
+            soup = BeautifulSoup(page.content(), 'html.parser')
+            
+            # 1. Description (繁中內容)
+            content_div = soup.select_one('.field-name-body, .node-event .content, .description')
+            if content_div:
+                details["description"] = content_div.get_text(separator=" ", strip=True)[:500]
+            
+            # 2. Image URL
+            img_tag = soup.select_one('.field-name-field-image img, .field-name-field-event-image img, .event-image img')
+            if img_tag:
+                img_src = img_tag.get('src', '')
+                if img_src.startswith('/'):
+                    details["image_url"] = f"https://www.hkyaf.com{img_src}"
+                else:
+                    details["image_url"] = img_src
+            
+            # 3. 邏輯判斷: 是否免費
+            full_text = soup.get_text()
+            details["is_free"] = any(x in full_text for x in ["免費", "費用全免", "Free", "free"])
+            
+            # 4. 年齡層提取
+            age_match = re.search(r'(\d+\s*至\s*\d+歲|\d+\s*-\s*\d+歲|\d+歲或以上|適合\d+.*歲)', full_text)
+            if age_match:
+                details["age_range"] = age_match.group()
+            
+            # 5. 地點提取
+            loc_tag = soup.select_one('.field-name-field-event-venue, .venue, .location')
+            if loc_tag:
+                details["location"] = loc_tag.get_text(strip=True)
+            
+            # 6. 日期提取
+            date_tag = soup.select_one('.field-name-field-event-date, .date, .event-date')
+            if date_tag:
+                details["date_str"] = date_tag.get_text(strip=True)
+            
+            page.close()
+            
+        except Exception as e:
+            print(f"      ⚠️ 內頁解析失敗: {e}")
+        
+        return details
+    
     def _extract_events(self, soup) -> List[dict]:
         """從 HTML 提取活動"""
         events = []
         
         # HKYAF 使用簡單 HTML 結構，查找 h2 標題和相關鏈接
-        # 查找所有 h2 標題
         h2_tags = soup.find_all('h2')
         
         print(f"    找到 {len(h2_tags)} 個 h2 標題")
@@ -117,7 +191,7 @@ class HKYAFStealthCrawler:
                 if not title or len(title) < 5:
                     continue
                 
-                # 檢查是否包含關鍵字
+                # 檢查是否包含關鍵字（繁中 + 英文）
                 if not any(kw in title.lower() for kw in self.keywords):
                     continue
                 
@@ -132,25 +206,9 @@ class HKYAFStealthCrawler:
                         elif href.startswith('http'):
                             url = href
                 
-                # 查找日期（可能在標題後的 p 標籤中）
-                date_str = ''
-                next_p = h2.find_next_sibling('p')
-                if next_p:
-                    date_str = next_p.get_text(strip=True)
-                
-                # 查找描述（查找父元素中的段落）
-                description = ''
-                parent = h2.find_parent(['div', 'section', 'article'])
-                if parent:
-                    desc_p = parent.find('p')
-                    if desc_p:
-                        description = desc_p.get_text(strip=True)[:200]
-                
                 events.append({
                     'title': title[:100],
-                    'url': url,
-                    'date_str': date_str,
-                    'description': description
+                    'url': url
                 })
                 print(f"      找到: {title[:50]}")
                 
@@ -165,15 +223,18 @@ class HKYAFStealthCrawler:
             return datetime.now().strftime('%Y-%m-%d')
         
         # 嘗試匹配各種日期格式
+        # 2026年3月15日
         match = re.search(r'(\d{4})年(\d{1,2})月(\d{1,2})日', text)
         if match:
             year, month, day = match.groups()
             return f"{year}-{int(month):02d}-{int(day):02d}"
         
+        # 2026-03-15
         match = re.search(r'(\d{4})-(\d{2})-(\d{2})', text)
         if match:
             return match.group(0)
         
+        # 15/03/2026
         match = re.search(r'(\d{1,2})/(\d{1,2})/(\d{4})', text)
         if match:
             day, month, year = match.groups()
@@ -183,7 +244,7 @@ class HKYAFStealthCrawler:
 
 if __name__ == '__main__':
     print("="*60)
-    print("🎨 HKYAF Crawler (Stealth) - 香港青年藝術協會")
+    print("🎨 HKYAF Crawler (Stealth + 繁體中文) - 香港青年藝術協會")
     print("="*60)
     
     crawler = HKYAFStealthCrawler()
@@ -196,5 +257,7 @@ if __name__ == '__main__':
     for i, e in enumerate(events, 1):
         print(f"{i}. {e.name}")
         print(f"   日期: {e.start_date}")
+        print(f"   地點: {e.location}")
+        print(f"   描述: {e.description[:100]}...")
         print(f"   URL: {e.source_url}")
         print()
