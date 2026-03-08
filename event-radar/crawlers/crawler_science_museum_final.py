@@ -84,89 +84,49 @@ class ScienceMuseumCrawler(PlaywrightCrawler):
         """從列表頁提取活動"""
         events = []
         
-        # 獲取頁面內容
-        html = self.page.content()
+        # 查找所有活動鏈接
+        links = self.page.query_selector_all('a[href*="/tc/web/scm/event/"]')
         
-        # 查找包含兒童節目圖片的活動
-        # 根據 remarks: /image/Event/Children-Programme
-        children_images = self.page.query_selector_all('img[src*="Children-Programme"], img[src*="children"], img[src*="kids"]')
+        print(f"    找到 {len(links)} 個活動鏈接")
         
-        if children_images:
-            print(f"    找到 {len(children_images)} 個兒童節目圖片")
-            for img in children_images:
-                try:
-                    # 獲取父元素
-                    parent = img.query_selector('xpath=..')
-                    if not parent:
-                        continue
-                    
-                    # 查找鏈接
-                    link_el = parent.query_selector('a') or img.query_selector('xpath=../..').query_selector('a')
-                    if not link_el:
-                        continue
-                    
-                    href = link_el.get_attribute('href') or ''
-                    title = link_el.inner_text().strip() or '香港科學館活動'
-                    
-                    if not href:
-                        continue
-                    
-                    # 構建完整 URL
-                    if href.startswith('/'):
-                        url = f"https://hk.science.museum{href}"
-                    elif href.startswith('http'):
-                        url = href
-                    else:
-                        url = f"https://hk.science.museum/tc/web/scm/{href}"
-                    
-                    # 檢查是否親子活動
-                    if not self.is_parent_child_event(title):
-                        continue
-                    
-                    events.append({
-                        'title': title[:100],
-                        'url': url,
-                        'date': ''
-                    })
-                    
-                except Exception as e:
+        for link in links:
+            try:
+                href = link.get_attribute('href') or ''
+                title = link.inner_text().strip()
+                
+                if not title or len(title) < 5 or not href:
                     continue
-        
-        # 如果沒找到兒童圖片，嘗試通用方法
-        if not events:
-            print("    嘗試通用方法查找活動...")
-            links = self.page.query_selector_all('a[href*="event"], a[href*="activity"], a[href*="programme"]')
-            
-            for link in links:
-                try:
-                    title = link.inner_text().strip()
-                    href = link.get_attribute('href') or ''
-                    
-                    if not title or len(title) < 5 or not href:
-                        continue
-                    
-                    # 檢查是否親子活動
-                    if not self.is_parent_child_event(title):
-                        continue
-                    
-                    # 構建 URL
-                    if href.startswith('/'):
-                        url = f"https://hk.science.museum{href}"
-                    elif href.startswith('http'):
-                        url = href
-                    else:
-                        continue
-                    
-                    # 避免重複
-                    if not any(e['url'] == url for e in events):
-                        events.append({
-                            'title': title[:100],
-                            'url': url,
-                            'date': ''
-                        })
-                        
-                except Exception as e:
+                
+                # 過濾非活動鏈接
+                if 'event-calendar' in href or 'event.html' == href.split('/')[-1]:
                     continue
+                
+                # 過濾成人導向的活動（大學、專業、研討會等）
+                exclude_keywords = ['大學', '專業', '研討會', 'conference', '學術', '已完結']
+                if any(kw in title for kw in exclude_keywords):
+                    continue
+                
+                # 構建完整 URL
+                if href.startswith('/'):
+                    url = f"https://hk.science.museum{href}"
+                elif href.startswith('http'):
+                    url = href
+                else:
+                    url = f"https://hk.science.museum/tc/web/scm/{href}"
+                
+                # 避免重複
+                if any(e['url'] == url for e in events):
+                    continue
+                
+                events.append({
+                    'title': title[:100],
+                    'url': url,
+                    'date': ''
+                })
+                print(f"      找到: {title[:50]}")
+                    
+            except Exception as e:
+                continue
         
         return events
     
